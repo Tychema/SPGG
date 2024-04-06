@@ -25,8 +25,8 @@ g_matrix=torch.nn.functional.conv2d(torch.ones((1,1,L_num, L_num),dtype=torch.fl
 xticks=[0, 10, 100, 1000, 10000, 100000]
 fra_yticks=[0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90,0.95, 1.00]
 Q_xticks=[0,1,2,3,4,5,6,7,8,9,10,11]
-Q_yticks=[20, 25, 30, 35, 40, 45, 50, 55, 60]
-profite_yticks=[-3,-1,0,1,3]
+Q_yticks=[-10,-5,0,5,10,15,20, 25, 30, 35, 40, 45, 50,60]
+profite_yticks=[-3,-1,0,1,3,5,7]
 C_env = torch.zeros((L_num, L_num), dtype=torch.float32).to(device)
 C_env[1][1] = 1
 
@@ -122,6 +122,7 @@ class SPGG_Qlearning(nn.Module):
 
     # #一轮博弈只后策略的改变
     def type_matrix_change(self,epsilon,type_matrix: tensor, Q_matrix: tensor):
+        type_t1_matrix= type_matrix.clone()
         indices = type_matrix.long().flatten()[mid]
         Q_probabilities = Q_matrix[mid, indices]
         # 在 Q_probabilities 中选择最大值索引
@@ -142,9 +143,9 @@ class SPGG_Qlearning(nn.Module):
         # 选择最大值的索引
 
         # 重新组织更新后的 tensor
-        type_matrix[1][1] = updated_values
+        type_t1_matrix[1][1] = updated_values
 
-        return type_matrix
+        return type_t1_matrix
 
     #CD矩阵分开，之前主要是用于3策略的
     def type_matrix_to_three_matrix(self,type_matrix: tensor):
@@ -195,7 +196,7 @@ class SPGG_Qlearning(nn.Module):
             plt.xscale('log')
         plt.ylabel(ylabel)
         plt.xlabel(xlable)
-        plt.title('Q_learning:'+' L='+str(self.L_num)+' r='+str(r)+' n_iter='+str(epoches))
+        plt.title('Q_learning:'+' L='+str(self.L_num)+' r='+str(r)+' T='+str(epoches))
         plt.pause(0.001)
         plt.clf()
         plt.close("all")
@@ -211,7 +212,7 @@ class SPGG_Qlearning(nn.Module):
         plt.plot(obsX, CC_data, color='blue',marker='*', label='CC', linestyle='-', linewidth=1, markeredgecolor='blue',
                  markersize=1, markeredgewidth=1)
         plt.plot(obsX, CD_data, color='black',marker='o', label='CD', linestyle='-', linewidth=1, markeredgecolor='black', markersize=1,markeredgewidth=1)
-        plt.plot(obsX, DC_data,color='gold',marker='o', label='DC', linestyle='-', linewidth=1, markeredgecolor='gold',
+        plt.plot(obsX, DC_data,color='green',marker='o', label='DC', linestyle='-', linewidth=1, markeredgecolor='green',
                  markersize=1, markeredgewidth=1)
         plt.xticks(xticks)
         plt.yticks(yticks)
@@ -219,7 +220,7 @@ class SPGG_Qlearning(nn.Module):
         plt.xscale('log')
         plt.ylabel('fraction')
         plt.xlabel('step')
-        plt.title('Q_learning:'+'L'+str(self.L_num)+' r='+str(r)+' n_iter='+str(epoches))
+        plt.title('Q_learning:'+'L'+str(self.L_num)+' r='+str(r)+' T='+str(epoches))
         plt.legend()
         plt.pause(0.001)
         plt.clf()
@@ -303,11 +304,12 @@ class SPGG_Qlearning(nn.Module):
 
         Qtable_Loop=[]
         Qtable_Loop.append(Q_matrix[mid].cpu().numpy())
-        type_t_matrix_Loop=np.array([])
-        type_t_matrix_Loop=np.append(type_t_matrix_Loop,type_t_matrix.cpu().numpy())
+        type_t_matrix_Loop=[]
+        type_t_matrix_Loop.append(type_t_matrix.cpu().numpy())
         obsX = np.array([])
         D_Y = np.array([])
         C_Y = np.array([])
+        C_state= np.array([])
         D_Value = np.array([])
         C_Value = np.array([])
         CC_data,DD_data,CD_data,DC_data=np.array([]),np.array([]),np.array([]),np.array([])
@@ -339,9 +341,9 @@ class SPGG_Qlearning(nn.Module):
 
             C_Value=np.append(C_Value,profit_matrix[1][1].item())
             Qtable_Loop.append(Q_matrix[mid].cpu().numpy())
-            type_t_matrix_Loop = np.append(type_t_matrix_Loop, type_t_matrix.cpu().numpy())
-            print("Q_matrix[mid]:")
-            print(Q_matrix[mid])
+            type_t_matrix_Loop.append(type_t_matrix.cpu().numpy())
+            # print("Q_matrix[mid]:")
+            # print(Q_matrix[mid])
             # obsX, D_Y, C_Y, D_Value, C_Value, count_0, count_1, CC, DD, CD, DC = self.cal_fra_and_value(obsX, D_Y, C_Y,D_Value,C_Value,type_t_minus_matrix,type_t_matrix,d_matrix,c_matrix,profit_matrix,i)
             # CC_data = np.append(CC_data, CC)
             # DD_data = np.append(DD_data, DD)
@@ -349,8 +351,9 @@ class SPGG_Qlearning(nn.Module):
             # DC_data = np.append(DC_data, DC)
             #self.shot_pic(type_t_matrix)
         Qtable_Loop=np.array(Qtable_Loop)
-        print("C_Value")
-        print(C_Value)
+        type_t_matrix_Loop=np.array(type_t_matrix_Loop)
+        # print("C_Value")
+        # print(C_Value)
         current_time = datetime.now()
         milliseconds = current_time.microsecond // 1000
         print(f"Current time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}.{milliseconds}")
@@ -417,18 +420,23 @@ class SPGG_Qlearning(nn.Module):
     def mock_C_env(self):
         type_t_matrix=torch.zeros((self.L_num,self.L_num),dtype=torch.float32).to(self.device)
         type_t_matrix[1][1]=1
+        type_t_matrix[0][1]=1
+        type_t_matrix[1][0]=1
+        type_t_matrix[1][2]=1
         C_Qtable=self.read_Qtable('Origin_Qlearning','C_Qtable','C_Qtable',self.r,10)
         print(C_Qtable)
         Q_matrix= torch.zeros(L_num*L_num, 2, 2).to(torch.float32).to(self.device)
         Q_matrix[mid]=torch.tensor(C_Qtable,dtype=torch.float32).to(self.device)
         Qtable_Loop,type_t_matrix_Loop,C_Value=self.run(type_t_matrix,Q_matrix,self.r, self.alpha,self.gamma,self.epsilon,self.epoches, self.L_num,self.device,type="Qtable")
-        self.draw_line_pic(np.arange(self.epoches), C_Value, C_Value, Q_xticks, profite_yticks, r=self.r, epoches=self.epoches, type="line1", ylabel='value', xlable='step',ylim=(-3,3))
+        self.draw_line_pic(np.arange(self.epoches+1), type_t_matrix_Loop[:,1,1], type_t_matrix_Loop[:,1,1], xticks, [-1,0,1,2], r=self.r, epoches=self.epoches, type="line1", ylabel='state', xlable='step',ylim=(-1,2))
+        self.draw_line_pic(np.arange(self.epoches), C_Value, C_Value, Q_xticks, profite_yticks, r=self.r, epoches=self.epoches, type="line1", ylabel='value', xlable='step',ylim=(-3,7))
+
         Qtable_CC=Qtable_Loop[:,1,1]
         Qtable_DD=Qtable_Loop[:,0,0]
         Qtable_CD=Qtable_Loop[:,1,0]
         Qtable_DC=Qtable_Loop[:,0,1]
         # print(Qtable_Loop[-1])
-        self.draw_transfer_pic(np.arange(self.epoches+1), Qtable_CC, Qtable_DD, Qtable_CD, Qtable_DC, Q_xticks, Q_yticks, r=self.r, epoches=self.epoches,ylim=(20,60))
+        self.draw_transfer_pic(np.arange(self.epoches+1), Qtable_CC, Qtable_DD, Qtable_CD, Qtable_DC, Q_xticks, Q_yticks, r=self.r, epoches=self.epoches,ylim=(-10,60))
 
 
     def mock_D_env(self):
@@ -464,7 +472,7 @@ class SPGG_Qlearning(nn.Module):
         plt.xscale('log')
         plt.ylabel('fraction')
         plt.xlabel('step')
-        plt.title('Q_learning:' + 'L' + str(L_num) + ' r=' + str(r) + ' n_iter=' + str(epoches))
+        plt.title('Q_learning:' + 'L' + str(L_num) + ' r=' + str(r) + ' T=' + str(epoches))
         plt.legend()
         plt.pause(0.001)
         plt.clf()
@@ -472,6 +480,6 @@ class SPGG_Qlearning(nn.Module):
 
 
 if __name__ == '__main__':
-    SPGG=SPGG_Qlearning(L_num,device,alpha,gamma,epsilon,r=4.9,epoches=10,cal_transfer=True)
+    SPGG=SPGG_Qlearning(L_num,device,alpha,gamma,epsilon,r=4.9,epoches=1000,cal_transfer=True)
     SPGG.mock_C_env()
     # SPGG.run_line2_pic(loop_num1=50,loop_num2 = 10)

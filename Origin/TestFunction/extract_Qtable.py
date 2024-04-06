@@ -52,4 +52,4 @@ def draw_line1(Loop_num,name,r,epoches=10000,L_num=100,ylim=(0,1)):
     plt.close("all")
 
 if __name__ == '__main__':
-    draw_line1(10, ['C_fra', 'D_fra'], 0, 10000, 200, (0, 1))
+    draw_line1(10, ['C_fra', 'D_fra'], 4.000000000000002, 10000, 200, (0, 1))

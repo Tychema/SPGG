@@ -202,14 +202,14 @@ class SPGG_Qlearning(nn.Module):
         mean_of_positive_elements = (value_tensor.to(torch.float32).sum()) / ((positive_num + negetive_num).sum())
         return mean_of_positive_elements.to("cpu")
 
-    def draw_line_pic(self,obsX,D_Y,C_Y,xticks,yticks,r,ylim=(0,1),epoches=10000,type="line1",xlable='step',ylabel='fractions'):
+    def draw_line_pic(self,D_Y,C_Y,xticks,yticks,r,ylim=(0,1),epoches=10000,type="line1",xlable='step',ylabel='fractions'):
         plt.clf()
         plt.close("all")
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
-        plt.plot(obsX, D_Y, 'ro', label='betray', linestyle='-', linewidth=1, markeredgecolor='r', markersize=1,
+        plt.plot(np.arange(D_Y.shape[0]), D_Y, 'ro', label='betray', linestyle='-', linewidth=1, markeredgecolor='r', markersize=1,
                  markeredgewidth=1)
-        plt.plot(obsX, C_Y, 'bo', label='cooperation', linestyle='-', linewidth=1, markeredgecolor='b',
+        plt.plot(np.arange(C_Y.shape[0]), C_Y, 'bo', label='cooperation', linestyle='-', linewidth=1, markeredgecolor='b',
                  markersize=1, markeredgewidth=1)
         plt.xticks(xticks)
         plt.yticks(yticks)
@@ -218,23 +218,23 @@ class SPGG_Qlearning(nn.Module):
             plt.xscale('log')
         plt.ylabel(ylabel)
         plt.xlabel(xlable)
-        plt.title('Q_learning:'+'L='+str(self.L_num)+' r='+str(r)+' n_iter='+str(epoches))
+        plt.title('Q_learning_episilonchange:'+'L='+str(self.L_num)+' r='+str(r)+' T='+str(epoches))
         plt.pause(0.001)
         plt.clf()
         plt.close("all")
 
 
-    def draw_transfer_pic(self, obsX, CC_data, DD_data, CD_data, DC_data, xticks, yticks, r, ylim=(0, 1), epoches=10000):
+    def draw_transfer_pic(self,  CC_data, DD_data, CD_data, DC_data, xticks, yticks, r, ylim=(0, 1), epoches=10000):
         plt.clf()
         plt.close("all")
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
-        plt.plot(obsX, DD_data, color='red',marker='o', label='DD', linestyle='-', linewidth=1, markeredgecolor='red', markersize=1,
+        plt.plot(np.arange(DD_data.shape[0]), DD_data, color='red',marker='o', label='DD', linestyle='-', linewidth=1, markeredgecolor='red', markersize=1,
                  markeredgewidth=1)
-        plt.plot(obsX, CC_data, color='blue',marker='*', label='CC', linestyle='-', linewidth=1, markeredgecolor='blue',
+        plt.plot(np.arange(CC_data.shape[0]), CC_data, color='blue',marker='*', label='CC', linestyle='-', linewidth=1, markeredgecolor='blue',
                  markersize=1, markeredgewidth=1)
-        plt.plot(obsX, CD_data, color='black',marker='o', label='CD', linestyle='-', linewidth=1, markeredgecolor='black', markersize=1,markeredgewidth=1)
-        plt.plot(obsX, DC_data,color='gold',marker='o', label='DC', linestyle='-', linewidth=1, markeredgecolor='gold',
+        plt.plot(np.arange(CD_data.shape[0]), CD_data, color='black',marker='o', label='CD', linestyle='-', linewidth=1, markeredgecolor='black', markersize=1,markeredgewidth=1)
+        plt.plot(np.arange(DC_data.shape[0]), DC_data,color='gold',marker='o', label='DC', linestyle='-', linewidth=1, markeredgecolor='gold',
                  markersize=1, markeredgewidth=1)
         plt.xticks(xticks)
         plt.yticks(yticks)
@@ -242,7 +242,7 @@ class SPGG_Qlearning(nn.Module):
         plt.xscale('log')
         plt.ylabel('fractions')
         plt.xlabel('step')
-        plt.title('Q_learning:'+'L'+str(self.L_num)+' r='+str(r)+' n_iter='+str(epoches))
+        plt.title('Q_learning_episilonchange:'+'L'+str(self.L_num)+' r='+str(r)+' T='+str(epoches))
         plt.legend()
         plt.pause(0.001)
         plt.clf()
@@ -280,7 +280,7 @@ class SPGG_Qlearning(nn.Module):
         DC=(torch.where((type_t_minus_matrix==0)&(type_t_matrix==1),torch.tensor(1),torch.tensor(0)).sum().item())/ (L_num * L_num)
         return CC,DD,CD,DC
 
-    def cal_fra_and_value(self,obsX, D_Y, C_Y, D_Value, C_Value, type_t_minus_matrix,type_t_matrix, d_matrix, c_matrix, profit_matrix,i):
+    def cal_fra_and_value(self, D_Y, C_Y, D_Value, C_Value, type_t_minus_matrix,type_t_matrix, d_matrix, c_matrix, profit_matrix,i):
         # 初始化图表和数据
 
         d_value = d_matrix * profit_matrix
@@ -289,13 +289,12 @@ class SPGG_Qlearning(nn.Module):
         cmean_of_positive = self.c_mean_v2(c_value)
         count_0 = torch.sum(type_t_matrix == 0).item()
         count_1 = torch.sum(type_t_matrix == 1).item()
-        obsX = np.append(obsX, i + 1)
         D_Y = np.append(D_Y, count_0 / (L_num * L_num))
         C_Y = np.append(C_Y, count_1 / (L_num * L_num))
         D_Value = np.append(D_Value, dmean_of_positive)
         C_Value = np.append(C_Value, cmean_of_positive)
         CC, DD, CD, DC = self.cal_transfer_num(type_t_minus_matrix,type_t_matrix)
-        return obsX, D_Y, C_Y, D_Value, C_Value, count_0, count_1, CC, DD, CD, DC
+        return D_Y, C_Y, D_Value, C_Value, count_0, count_1, CC, DD, CD, DC
 
 
 
@@ -315,7 +314,6 @@ class SPGG_Qlearning(nn.Module):
         count_1=1-count_0
 
 
-        obsX = np.array([])
         D_Y = np.array([])
         C_Y = np.array([])
         D_Value = np.array([])
@@ -350,7 +348,7 @@ class SPGG_Qlearning(nn.Module):
             type_t_minus_matrix = type_t_matrix
             type_t_matrix = type_t1_matrix
 
-            obsX, D_Y, C_Y, D_Value, C_Value, count_0, count_1,CC,DD,CD,DC = self.cal_fra_and_value(obsX, D_Y, C_Y, D_Value, C_Value, type_t_minus_matrix,type_t_matrix, d_matrix, c_matrix, profit_matrix,i)
+            D_Y, C_Y, D_Value, C_Value, count_0, count_1,CC,DD,CD,DC = self.cal_fra_and_value( D_Y, C_Y, D_Value, C_Value, type_t_minus_matrix,type_t_matrix, d_matrix, c_matrix, profit_matrix,i)
             CC_data = np.append(CC_data, CC)
             DD_data = np.append(DD_data, DD)
             CD_data = np.append(CD_data, CD)
@@ -363,7 +361,7 @@ class SPGG_Qlearning(nn.Module):
             print(D_Y[-1],C_Y[-1])
             return D_Y[-1],C_Y[-1]
         elif(type=="line1"):
-            return D_Y,C_Y,D_Value,C_Value,Q_matrix,type_t_matrix,count_0,count_1,obsX,CC_data,DD_data,CD_data,DC_data
+            return D_Y,C_Y,D_Value,C_Value,Q_matrix,type_t_matrix,count_0,count_1,CC_data,DD_data,CD_data,DC_data
 
     def mkdir(self,path):
         import os
@@ -371,9 +369,9 @@ class SPGG_Qlearning(nn.Module):
             os.makedirs(path)
 
     def save_data(self,type,name,r,count,data):
-        self.mkdir('data/Origin_Qlearning_epsilongchange/'+str(type))
+        self.mkdir('data/Origin_Qlearning_epsilonchange/'+str(type))
         try:
-            np.savetxt('data/Origin_Fermi/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(type), name, str(r), str(self.epoches), str(self.L_num),str(count)), data)
+            np.savetxt('data/Origin_Qlearning_epsilonchange/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(type), name, str(r), str(self.epoches), str(self.L_num),str(count)), data)
             # np.savetxt(str(type)+'/'+name + '第' +" epoches=10000 L=200"+ str(count) + '次实验数据.txt',
             #            C_data)
         except:
@@ -385,7 +383,7 @@ class SPGG_Qlearning(nn.Module):
             for i in range(loop_num2):
                 r1=r/10
                 print("loop_num1: "+str(j)+" loop_num2: "+str(i)+"r="+str(r1))
-                D_Y, C_Y, D_Value, C_Value, Q_matrix, type_t_matrix, count_0, count_1, obsX, CC_data, DD_data, CD_data, DC_data = self.run(
+                D_Y, C_Y, D_Value, C_Value, Q_matrix, type_t_matrix, count_0, count_1,  CC_data, DD_data, CD_data, DC_data = self.run(
                     r1, self.alpha, self.gamma, self.epsilon, self.epoches, self.L_num, self.device, type="line1")
                 self.save_data('C_fra', 'C_fra',r1, i, C_Y)
                 self.save_data('D_fra', 'D_fra',r1, i, D_Y)
@@ -395,11 +393,11 @@ class SPGG_Qlearning(nn.Module):
                 self.save_data('DD_fra', 'DD_fra',r1, i, DD_data)
                 self.save_data('CD_fra', 'CD_fra',r1, i, CD_data)
                 self.save_data('DC_fra', 'DC_fra',r1, i, DC_data)
-            r=r+0.1
+            r=r+1
 
 if __name__ == '__main__':
     SPGG=SPGG_Qlearning(L_num,device,alpha,gamma,epsilon=0.02,r=4,epoches=10000,cal_transfer=True)
-    SPGG.run_line2_pic(loop_num1=50,loop_num2 = 10)
+    SPGG.run_line2_pic(loop_num1=51,loop_num2 = 10)
 
 #def line2_pic(self, alpha,gamma,epsilon,loop_num1=10,loop_num2 = 50):
     #     D_Final_fra = np.zeros(loop_num2)
@@ -434,7 +432,7 @@ if __name__ == '__main__':
     #     Q_matrix_ave=torch.zeros((L_num * L_num, 2, 2)).to(device)
     #     loop_num=10
     #     for i in range(loop_num):
-    #         D_Y, C_Y, D_Value, C_Value, Q_matrix, type_t_matrix, count_0, count_1, obsX, CC_data, DD_data, CD_data, DC_data = self.run(
+    #         D_Y, C_Y, D_Value, C_Value, Q_matrix, type_t_matrix, count_0, count_1,  CC_data, DD_data, CD_data, DC_data = self.run(
     #             self.r, self.alpha, self.gamma, self.epsilon, self.epoches, self.L_num, self.device, type="line1")
     #         D_Y_ave = D_Y_ave + D_Y
     #         C_Y_ave = C_Y_ave + C_Y
@@ -463,10 +461,10 @@ if __name__ == '__main__':
     #     print(q_mean_matrix)
     #
     #     self.draw_line_pic(np.arange(epoches+1), D_Y_ave, C_Y_ave, xticks, fra_yticks, r=r, epoches=epoches)
-    #     self.draw_line_pic(obsX, D_Value_ave, C_Value_ave, xticks, profite_yticks, ylim=(0, 15), r=r, epoches=epoches,
+    #     self.draw_line_pic(D_Value_ave, C_Value_ave, xticks, profite_yticks, ylim=(0, 15), r=r, epoches=epoches,
     #                        xlable='step', ylabel='value')
     #     if (self.cal_transfer == True):
-    #         self.draw_transfer_pic(obsX, CC_data_ave, DD_data_ave, CD_data_ave, DC_data_ave, xticks,
+    #         self.draw_transfer_pic( CC_data_ave, DD_data_ave, CD_data_ave, DC_data_ave, xticks,
     #                                r=self.r, epoches=self.epoches)
     #     self.shot_pic(type_t_matrix)
     #     print(count_0_ave / (L_num * L_num))
