@@ -291,31 +291,31 @@ if __name__ == '__main__':
     Fermi="Origin_Fermi"
     Qlearning="Origin_Qlearning"
     Origin_Qlearning_NeiborLearning = "Origin_Qlearning_NeiborLearning"
+    Origin_Qlearning_Fermi= "Origin_Qlearning_Fermi"
     name=["D_fra","C_fra"]
 
     #折线图随时间
-    draw_line1(loop_num,name,r, Qlearning)
-    draw_line1(loop_num,name,r, Fermi)
+    #draw_line1(loop_num,name,r, Qlearning)
+    #draw_line1(loop_num,name,r, Fermi)
     #draw_line1(loop_num, name, r, Origin_Qlearning_NeiborLearning)
 
     #折线图随r
     #draw_line2(51,10,Qlearning)
     #draw_line2(51,10,Fermi)
-    #draw_line2(51, 10, Origin_Qlearning_NeiborLearning)
+    #draw_line2(51, 10, Origin_Qlearning_Fermi)
 
     #all_value折线图
     #draw_all_value_line(loop_num,'all_value',r,ylim=(0,22))
 
     #value折线图
-    #draw_value_line(loop_num,['D_value','C_value'],r,"Origin_Qlearning",ylim=(-1,8))
-    #draw_value_line(loop_num,['D_value','C_value'],r,"Origin_Fermi",ylim=(-1,8))
+    #draw_value_line(loop_num,['D_value','C_value'],r,"Origin_Qlearning",ylim=(8,14))
 
     #transfer折线图
     #cal_transfer_pic(loop_num, ["CC_fra", "DD_fra", "CD_fra", "DC_fra"], r=r, updateMethod="Origin_Qlearning")
 
 
     #qtable转换
-    #draw_line_qtable(loop_num, ["CC_fra", "DD_fra", "CD_fra", "DC_fra"], r=4.9, updateMethod="Origin_Qlearning")
+    #draw_line_four_type(loop_num, ["DD_Y", "CC_Y", "CDC_Y", "StickStrategy_Y"], r=r, updateMethod="Origin_Qlearning",labels=type_labels, ylim=(0, 1), yticks=fra_yticks, ylabel='Fractions')
 
     #type_four一套
     #draw_line1(loop_num,name,r, Qlearning)

@@ -16,7 +16,7 @@ def read_data(path):
     data = np.loadtxt(path)
     return data
 
-def draw_line_pic(D_Y,C_Y,xticks,yticks,r,updateMethod,ylim=(0,1),epoches=10000,type="line1",xlable='t',ylabel='Fractions'):
+def draw_line_pic(D_Y,C_Y,xticks,yticks,r,updateMethod,ylim=(0,1),epoches=20000,type="line1",xlable='t',ylabel='Fractions'):
     plt.clf()
     plt.close("all")
     fig = plt.figure()
@@ -56,7 +56,7 @@ def draw_line_pic(D_Y,C_Y,xticks,yticks,r,updateMethod,ylim=(0,1),epoches=10000,
     plt.clf()
     plt.close("all")
 
-def draw_line2(loop_num1,loop_num2,updateMethod,epoches=10000,L_num=200):
+def draw_line2(loop_num1,loop_num2,updateMethod,epoches=20000,L_num=200):
     D_Final_fra = np.array([])
     C_Final_fra = np.array([])
     r = 0
@@ -76,18 +76,24 @@ def draw_line2(loop_num1,loop_num2,updateMethod,epoches=10000,L_num=200):
 
     draw_line_pic( D_Final_fra, C_Final_fra, r_xticks, fra_yticks,r='0-5',updateMethod=updateMethod, epoches=epoches, type="line2", ylabel='Fractions', xlable='r')
 
-def draw_line1(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(0,1),yticks=fra_yticks):
+def draw_line1(loop_num,name,r,updateMethod,epoches=20000,L_num=200,ylim=(0,1),yticks=fra_yticks):
     plt.clf()
     plt.close("all")
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     i=0
+    labels=name
     for na in name:
-        final_data = np.zeros(epoches+1)
+        final_data = np.zeros(epoches)
         for count in range(loop_num):
             data=read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod),na, na, r, epoches,L_num, str(count)))
             final_data=final_data+data
-        final_data=final_data/loop_num
+        final_data=final_data/(loop_num)
+        ["Qlearning_plus_value_np", "update_neibor_learning0_np", "update_neibor_learning1_np"]
+        if na=="Qlearning_plus_value_np":
+            final_data = final_data *0.8
+        elif na=="update_neibor_learning0_np" or na=="update_neibor_learning1_np":
+            final_data = final_data *0.2
         final_data = np.insert(final_data, 0, final_data[0])
         print(final_data[-1])
         plt.plot(np.arange(final_data.shape[0]), final_data, color=colors[i], marker='o',label=labels[i], linestyle='-', linewidth=1, markeredgecolor=colors[i], markersize=1,
@@ -106,7 +112,7 @@ def draw_line1(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(0,1),y
     plt.close("all")
 
 
-def draw_value_line(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(0,1)):
+def draw_value_line(loop_num,name,r,updateMethod,epoches=20000,L_num=200,ylim=(0,1)):
     plt.clf()
     plt.close("all")
     fig = plt.figure()
@@ -134,7 +140,7 @@ def draw_value_line(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(0
     plt.clf()
     plt.close("all")
 
-def draw_transfer_pic( DD_data,CC_data, CD_data, DC_data, xticks, yticks,labels,r,updateMethod, ylim=(0, 1), epoches=10000, ylable='Fractions'):
+def draw_transfer_pic( DD_data,CC_data, CD_data, DC_data, xticks, yticks,labels,r,updateMethod, ylim=(0, 1), epoches=20000, ylable='Fractions'):
     plt.clf()
     plt.close("all")
     fig = plt.figure()
@@ -166,7 +172,7 @@ def draw_transfer_pic( DD_data,CC_data, CD_data, DC_data, xticks, yticks,labels,
 
 
 
-def cal_transfer_pic(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(0,1)):
+def cal_transfer_pic(loop_num,name,r,updateMethod,epoches=20000,L_num=200,ylim=(0,1)):
     data=[]
     for i in range(4):
         final_data = np.zeros(epoches)
@@ -181,7 +187,7 @@ def cal_transfer_pic(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(
     draw_transfer_pic( data[0], data[1],data[2],data[3], xticks, fra_yticks, r=r,updateMethod=updateMethod,
                            epoches=epoches, ylim=ylim)
 
-def draw_all_value_line(loop_num, name, r, epoches=10000, L_num=200, ylim=(0, 1)):
+def draw_all_value_line(loop_num, name, r, epoches=20000, L_num=200, ylim=(0, 1)):
     updateMethod=["Origin_Qlearning","Origin_Fermi"]
     all_value_ave1=np.zeros(epoches)
     for i in range(loop_num):
@@ -214,7 +220,7 @@ def draw_all_value_line(loop_num, name, r, epoches=10000, L_num=200, ylim=(0, 1)
     plt.close("all")
     # draw_line_pic(all_value_ave1, all_value_ave2, xticks, profite_yticks, r=r,updateMethod=updateMethod,epoches=epoches, type="line1", ylabel='Average Payoffs', xlable='t',ylim=(8,20))
 
-def draw_line_qtable(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(0,1)):
+def draw_line_qtable(loop_num,name,r,updateMethod,epoches=20000,L_num=200,ylim=(0,1)):
     data=[]
     for i in range(4):
         final_data = np.zeros(epoches)
@@ -227,7 +233,7 @@ def draw_line_qtable(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(
     data = data / loop_num
     draw_transfer_pic( data[0], data[1],data[2],data[3], xticks, fra_yticks, r=r,updateMethod=updateMethod, epoches=epoches, ylim=ylim)
 
-def draw_line_four_type(loop_num,name,r,updateMethod,labels,epoches=10000,L_num=200,ylim=(0,1),yticks=fra_yticks,ylabel='Fractions'):
+def draw_line_four_type(loop_num,name,r,updateMethod,labels,epoches=20000,L_num=200,ylim=(0,1),yticks=fra_yticks,ylabel='Fractions'):
     data=[]
     for i in range(len(name)):
         final_data = np.zeros(epoches)
@@ -240,7 +246,7 @@ def draw_line_four_type(loop_num,name,r,updateMethod,labels,epoches=10000,L_num=
     data = data / loop_num
     draw_transfer_pic( data[0], data[1],data[2],data[3], xticks, yticks,labels,r=r,updateMethod=updateMethod, epoches=epoches, ylim=ylim, ylable=ylabel)
 
-def draw_line_four_type_value(loop_num,name,r,updateMethod,labels,epoches=10000,L_num=200,ylim=(0,1),yticks=fra_yticks,ylabel='Fractions'):
+def draw_line_four_type_value(loop_num,name,r,updateMethod,labels,epoches=20000,L_num=200,ylim=(0,1),yticks=fra_yticks,ylabel='Fractions'):
     data=[]
     for i in range(len(name)):
         final_data = np.zeros(epoches)
@@ -286,7 +292,7 @@ def draw_line_four_type_value(loop_num,name,r,updateMethod,labels,epoches=10000,
 
 
 if __name__ == '__main__':
-    r=2.9
+    r=5.0
     loop_num=10
     Fermi="Origin_Fermi"
     Qlearning="Origin_Qlearning"
@@ -294,8 +300,8 @@ if __name__ == '__main__':
     name=["D_fra","C_fra"]
 
     #折线图随时间
-    draw_line1(loop_num,name,r, Qlearning)
-    draw_line1(loop_num,name,r, Fermi)
+    #draw_line1(loop_num,name,r, Qlearning)
+    #draw_line1(loop_num,name,r, Fermi)
     #draw_line1(loop_num, name, r, Origin_Qlearning_NeiborLearning)
 
     #折线图随r
@@ -307,8 +313,7 @@ if __name__ == '__main__':
     #draw_all_value_line(loop_num,'all_value',r,ylim=(0,22))
 
     #value折线图
-    #draw_value_line(loop_num,['D_value','C_value'],r,"Origin_Qlearning",ylim=(-1,8))
-    #draw_value_line(loop_num,['D_value','C_value'],r,"Origin_Fermi",ylim=(-1,8))
+    #draw_value_line(loop_num,['D_value','C_value'],r,Origin_Qlearning_NeiborLearning,ylim=(0,20))
 
     #transfer折线图
     #cal_transfer_pic(loop_num, ["CC_fra", "DD_fra", "CD_fra", "DC_fra"], r=r, updateMethod="Origin_Qlearning")
@@ -332,3 +337,9 @@ if __name__ == '__main__':
     #CDC_neibor_num
     #draw_line1(loop_num, ["CDC_neibor_num_np"], r, Qlearning,ylim=(0,5),yticks=[0,1,2,3,4,5])
     #draw_value_line(loop_num, ["CDC_neibor_DD_value_np","CDC_neibor_CC_value_np"], r, Qlearning,ylim=(0,14))
+
+    #qlearning And NerborLearning
+    #draw_line1(loop_num, ["Qlearning_plus_value_np","update_neibor_learning0_np","update_neibor_learning1_np"], r, Origin_Qlearning_NeiborLearning,yticks=[ 0,5,10,15,20,25,30,35,40,45,50,60],ylim=(0,55))
+
+    #C_neibor_D_value_ave_np
+    draw_value_line(loop_num,["C_neibor_D_value_ave_np","D_neibor_C_value_ave_np"],r,Origin_Qlearning_NeiborLearning,ylim=(0,12))

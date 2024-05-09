@@ -268,7 +268,7 @@ class SPGG_Qlearning(nn.Module):
         image = np.zeros((type_t_matrix.size(0), type_t_matrix.size(1), 3), dtype=np.uint8)
         for label, color in color_map.items():
             image[type_t_matrix.cpu() == label] = color
-        plt.imshow(image)
+        plt.imshow(image,interpolation='None')
         plt.show()
         plt.clf()
         plt.close("all")

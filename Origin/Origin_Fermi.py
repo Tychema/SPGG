@@ -33,7 +33,7 @@ fra_yticks=[0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6,
 profite_yticks=[0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,17,20]
 
 class SPGG_Fermi(nn.Module):
-    def __init__(self,epoches,L_num,device,r,K=0.1,cal_transfer=False):
+    def __init__(self,epoches,L_num,device,r,K=0.1,count=0,cal_transfer=False):
         super(SPGG_Fermi, self).__init__()
         self.epoches=epoches
         self.L_num=L_num
@@ -42,6 +42,7 @@ class SPGG_Fermi(nn.Module):
         self.neibor_kernel=torch.tensor([[0,1,0],[1,1,1],[0,1,0]],dtype=torch.float32).to(device).view(1,1,3,3)
         self.K=K
         self.cal_transfer=cal_transfer
+        self.count=count
 
 
     def generated_default_type_matrix(self,L_num):
@@ -189,10 +190,12 @@ class SPGG_Fermi(nn.Module):
         for label, color in color_map.items():
             image[type_t_matrix.cpu() == label] = color
         plt.title('Fermi: '+'T='+str(i))
-        plt.imshow(image)
-        self.mkdir('data/Origin_Fermi/shot_pic/r={}/generated2'.format(r))
-        plt.savefig('data/Origin_Fermi/shot_pic/r={}/generated2/t={}.png'.format(r,i))
-        plt.show()
+        plt.imshow(image,interpolation='None')
+        self.mkdir('data/Origin_Fermi/shot_pic/r={}/generated1'.format(r))
+        plt.savefig('data/Origin_Fermi/shot_pic/r={}/generated1/t={}.png'.format(r,i))
+        self.mkdir('data/Origin_Fermi/shot_pic/r={}/generated1/type_t_matrix'.format(r))
+        np.savetxt('data/Origin_Fermi/shot_pic/r={}/generated1/type_t_matrix/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(r),"type_t_matrix",str(r),str(self.epoches),str(self.L_num),str(self.count)),type_t_matrix.cpu().numpy())
+        #plt.show()
         plt.clf()
         plt.close("all")
 
@@ -250,7 +253,7 @@ class SPGG_Fermi(nn.Module):
         print(f"Current time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}.{milliseconds}")
 
 
-        type_t_matrix = self.generated_default_type_matrix2(L_num).to(device)
+        type_t_matrix = self.generated_default_type_matrix(L_num).to(device)
         value_matrix = torch.tensor(L, dtype=torch.float32).to(device)
         count_0=torch.where(type_t_matrix == 0, torch.tensor(1), torch.tensor(0)).sum().item()/ (L_num * L_num)
         count_1=1-count_0
@@ -279,7 +282,7 @@ class SPGG_Fermi(nn.Module):
             type_t1_matrix=self.fermiUpdate(type_t_matrix,profit_matrix,self.K)
             d_matrix,c_matrix=self.type_matrix_to_three_matrix(type_t1_matrix)
             #快照
-            if i==0  or i==9 or i==49 or i==99 or i==299 or i==499 or i==799 or i==999 or i==4999 or i==9999:
+            if i==0  or i==9 or i==49 or i==99 or i==299 or i==499 or i==799 or i==999 or i==4999 or i==9999 or i==19999:
                 self.shot_pic(type_t_matrix,i+1,r)
             #计算比例转换
             if self.cal_transfer == True:
@@ -310,9 +313,9 @@ class SPGG_Fermi(nn.Module):
             os.makedirs(path)
 
     def save_data(self,type,name,r,count,data):
-        self.mkdir('data/Origin_Fermi/'+str(type))
+        self.mkdir('data/Origin_Fermi/generated1/'+str(type))
         try:
-            np.savetxt('data/Origin_Fermi/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(type), name, str(r), str(self.epoches), str(self.L_num),str(count)), data)
+            np.savetxt('data/Origin_Fermi/generated1/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(type), name, str(r), str(self.epoches), str(self.L_num),str(count)), data)
             # np.savetxt(str(type)+'/'+name + '第' +" epoches=10000 L=200"+ str(count) + '次实验数据.txt',
             #            C_data)
         except:
@@ -358,37 +361,40 @@ class SPGG_Fermi(nn.Module):
         loop_num = 1
         for i in range(loop_num):
             D_Y, C_Y, D_Value, C_Value, type_t_matrix, count_0, count_1, all_value = self.run(r, type="line1")
-            D_Y_ave = D_Y_ave + D_Y
-            C_Y_ave = C_Y_ave + C_Y
-            D_Value_ave = D_Value_ave + D_Value
-            C_Value_ave = C_Value_ave + C_Value
-            count_0_ave = count_0_ave + count_0
-            count_1_ave = count_1_ave + count_1
+            # D_Y_ave = D_Y_ave + D_Y
+            # C_Y_ave = C_Y_ave + C_Y
+            # D_Value_ave = D_Value_ave + D_Value
+            # C_Value_ave = C_Value_ave + C_Value
+            # count_0_ave = count_0_ave + count_0
+            # count_1_ave = count_1_ave + count_1
+            # all_value_ave=all_value_ave+all_value
+            # self.save_data('C_fra', 'C_fra', r, i, C_Y)
+            # self.save_data('D_fra', 'D_fra', r, i, D_Y)
+            # self.save_data('C_value', 'C_value', r, i, C_Value)
+            # self.save_data('D_value', 'D_value', r, i, D_Value)
             # self.save_data('all_value', 'all_value', r, i, all_value)
-        D_Y_ave = D_Y_ave / loop_num
-        C_Y_ave = C_Y_ave / loop_num
-        D_Value_ave = D_Value_ave / loop_num
-        C_Value_ave = C_Value_ave / loop_num
-        count_0_ave = count_0_ave / loop_num
-        count_1_ave = count_1_ave / loop_num
-        # self.save_data('C_fra', 'C_fra', r, 0, C_Y_ave)
-        # self.save_data('D_fra', 'D_fra', r, 0, D_Y_ave)
-        # self.save_data('C_value', 'C_value', r, 0, C_Value_ave)
-        # self.save_data('D_value', 'D_value', r, 0, D_Value_ave)
-        self.draw_line_pic( D_Y_ave, C_Y_ave, xticks, fra_yticks, r=r, epoches=self.epoches)
-        self.draw_line_pic(D_Value_ave, C_Value_ave, xticks, profite_yticks, r=r, ylim=(0, 15),
-                           epoches=self.epoches,
-                           xlabel="T", ylabel="value")
-        self.draw_line_pic( all_value_ave, all_value_ave, xticks, profite_yticks, r=r, ylim=(0, 20),epoches=self.epoches,xlabel="T", ylabel="all_value")
-        #self.shot_pic(type_t_matrix,i)
-
-        print(count_0_ave / (L_num * L_num))
-        print(count_1_ave / (L_num * L_num))
-        print(D_Value_ave[-1])
-        print(C_Value_ave[-1])
+        # D_Y_ave = D_Y_ave / loop_num
+        # C_Y_ave = C_Y_ave / loop_num
+        # D_Value_ave = D_Value_ave / loop_num
+        # C_Value_ave = C_Value_ave / loop_num
+        # count_0_ave = count_0_ave / loop_num
+        # count_1_ave = count_1_ave / loop_num
+        # all_value_ave=all_value_ave/loop_num
+        #
+        # self.draw_line_pic( D_Y_ave, C_Y_ave, xticks, fra_yticks, r=r, epoches=self.epoches)
+        # self.draw_line_pic(D_Value_ave, C_Value_ave, xticks, profite_yticks, r=r, ylim=(0, 15),
+        #                    epoches=self.epoches,
+        #                    xlabel="T", ylabel="value")
+        # self.draw_line_pic( all_value_ave, all_value_ave, xticks, profite_yticks, r=r, ylim=(0, 20),epoches=self.epoches,xlabel="T", ylabel="all_value")
+        # #self.shot_pic(type_t_matrix,i)
+        #
+        # print(count_0_ave / (L_num * L_num))
+        # print(count_1_ave / (L_num * L_num))
+        # print(D_Value_ave[-1])
+        # print(C_Value_ave[-1])
 
 def draw_shot():
-    r_list=[3.6,3.7,3.8,4.7,5.0]
+    r_list=[2.5,2.9,3.3]
     for r in r_list:
         SPGG = SPGG_Fermi(epoches,L_num,device,r)
         SPGG.line1_pic(r)
