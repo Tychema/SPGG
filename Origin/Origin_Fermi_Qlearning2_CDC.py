@@ -13,22 +13,12 @@ import torch.nn as nn
 from matplotlib.colors import LinearSegmentedColormap
 
 L_num=200
-torch.cuda.set_device("cuda:3" if torch.cuda.is_available() else "cpu")
-device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+torch.cuda.set_device("cuda:4" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:4" if torch.cuda.is_available() else "cpu")
 alpha=0.8
 gamma=0.8
 epsilon=-1
 neibor_kernel=torch.tensor([[0,1,0],[1,1,1],[0,1,0]],dtype=torch.float64).to(device).view(1,1,3,3)
-actions = torch.tensor([0, 1],dtype=torch.float64).to(device)
-L = np.full((L_num, L_num), 0)
-value_matrix = torch.tensor(L, dtype=torch.float64).to(device)
-
-zeros_tensor = torch.zeros((1, 1, L_num, L_num),dtype=torch.float64).to(torch.float64)
-g_matrix=torch.nn.functional.conv2d(torch.ones((1,1,L_num, L_num),dtype=torch.float64).to(device), neibor_kernel,
-                                                      bias=None, stride=1, padding=1).to(device)
-xticks=[0, 10, 100, 1000, 10000, 100000]
-fra_yticks=[0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90,0.95, 1.00]
-profite_yticks=[0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
 class SPGG_Qlearning(nn.Module):
     def __init__(self,L_num,device,alpha,gamma,epsilon,r,epoches,lr=0.2,eta=0.8,count=0,cal_transfer=False):
@@ -92,13 +82,54 @@ class SPGG_Qlearning(nn.Module):
         indices_left, indices_right, indices_up, indices_down = self.indices_Matrix_to_Four_Matrix(type_t1_matrix)
         #生成一个矩阵随机决定向哪个方向学习
         learning_direction=torch.randint(0,4,(L_num,L_num)).to(device)
+
         #生成一个随机矩阵决定是否向他学习
         learning_probabilities=torch.rand(L_num,L_num).to(device)
-        #费米更新
-        type_t1_matrix=(learning_direction==0)*((learning_probabilities<=W_left)*indices_left+(learning_probabilities>W_left)*type_t_matrix) +\
-                          (learning_direction==1)*((learning_probabilities<=W_right)*indices_right+(learning_probabilities>W_right)*type_t_matrix) +\
-                            (learning_direction==2)*((learning_probabilities<=W_up)*indices_up+(learning_probabilities>W_up)*type_t_matrix) +\
-                                (learning_direction==3)*((learning_probabilities<=W_down)*indices_down+(learning_probabilities>W_down)*type_t_matrix)
+        whether_learning = (learning_direction == 0) * ((learning_probabilities <= W_left)) + (
+                    learning_direction == 1) * ((learning_probabilities <= W_right)) + (learning_direction == 2) * (
+                           (learning_probabilities <= W_up)) + (learning_direction == 3) * (
+                           (learning_probabilities <= W_down))
+        sub_type_t_matrix = type_t_matrix[0:7, 0:7]
+        sub_type_t1_matrix = type_t_matrix[0:7, 0:7]
+        sub_profit_matrix = profit_matrix[0:7, 0:7]
+        Q_indices = torch.arange(type_t_matrix.numel()).reshape(200, 200)[0:7, 0:7].reshape(7 * 7).to(device)
+        sub_Q_tensor = Q_tensor[Q_indices]
+        sub_W_left = W_left[0:7, 0:7]
+        sub_W_right = W_right[0:7, 0:7]
+        sub_W_up = W_up[0:7, 0:7]
+        sub_W_down = W_down[0:7, 0:7]
+        sub_learning_direction = learning_direction[0:7, 0:7]
+        sub_learning_probabilities = learning_probabilities[0:7, 0:7]
+        sub_whether_learning = whether_learning[0:7, 0:7]
+        # print("sub_type_t1_matrix")
+        # print(sub_type_t_matrix)
+        # print("sub_type_t1_matrix")
+        # print(sub_type_t1_matrix)
+        # print("sub_profit_matrix")
+        # print(sub_profit_matrix)
+        # print("sub_Q_tensor")
+        # print(sub_Q_tensor)
+        # print("sub_W_left")
+        # print(sub_W_left)
+        # print("sub_W_right")
+        # print(sub_W_right)
+        # print("sub_W_up")
+        # print(sub_W_up)
+        # print("sub_W_down")
+        # print(sub_W_down)
+        # print("sub_learning_direction")
+        # print(sub_learning_direction)
+        # print("sub_learning_probabilities")
+        # print(sub_learning_probabilities)
+        # print("sub_whether_learning")
+        # print(sub_whether_learning)
+        left_type_t1_matrix=(learning_direction==0)*((learning_probabilities<=W_left)*indices_left+(learning_probabilities>W_left)*type_t_matrix)
+        right_type_t1_matrix=(learning_direction==1)*((learning_probabilities<=W_right)*indices_right+(learning_probabilities>W_right)*type_t_matrix)
+        up_type_t1_matrix=(learning_direction==2)*((learning_probabilities<=W_up)*indices_up+(learning_probabilities>W_up)*type_t_matrix)
+        down_type_t1_matrix=(learning_direction==3)*((learning_probabilities<=W_down)*indices_down+(learning_probabilities>W_down)*type_t_matrix)
+        type_t1_matrix= left_type_t1_matrix+right_type_t1_matrix+up_type_t1_matrix+down_type_t1_matrix
+
+
         return type_t1_matrix.view(L_num,L_num)
 
     #将最后一行和最后一列添加到第一行和第一列之前，将第一行和第一列添加到最后一行和最后一列之后
@@ -139,7 +170,7 @@ class SPGG_Qlearning(nn.Module):
             d_5_profit_matrix = torch.nn.functional.conv2d(d_profit_matrix.view(1, 1, L_num+2, L_num+2), neibor_kernel,
                                                            bias=None, stride=1, padding=0).to(device)
             d_matrix,c_matrix=self.type_matrix_to_three_matrix(type_t_matrix)
-            # 这里的k不是固定值，周围的player的k可能会有4顶点为3.
+
             profit_matrix = c_5_profit_matrix * c_matrix + d_5_profit_matrix * d_matrix
             return profit_matrix.view(L_num, L_num).to(torch.float64)
 
@@ -227,75 +258,70 @@ class SPGG_Qlearning(nn.Module):
         # 计算大于零的元素的均值
         mean_of_positive_elements = (value_tensor.to(torch.float64).sum()) / ((positive_num + negetive_num).sum())
         return mean_of_positive_elements.to("cpu")
-
-    def type_matrix_change(self,epsilon,type_matrix: tensor, Q_matrix: tensor):
-        indices = type_matrix.long().flatten()
-        Q_probabilities = Q_matrix[torch.arange(len(indices)), indices]
-        # 在 Q_probabilities 中选择最大值索引
-        # 找到每个概率分布的最大值
-        max_values, _ = torch.max(Q_probabilities, dim=1)
-
-        max_tensor = torch.where(Q_probabilities == max_values[:, None], torch.tensor(1.0, device=device),
-                                 torch.tensor(0.0, device=device))
-
-        # 生成随机数
-        rand_tensor = torch.rand(max_tensor.size()).to(device)
-        # 将原始tensor中的值为0的位置设为一个较大的负数，以便在后续选取最大值时不考虑这些位置
-        masked_tensor = (max_tensor.float() - (1 - max_tensor.float()) * 1e9).to(device)
-        # 将随机数加到masked_tensor上，使得原始tensor中的1值所在的位置在新的tensor中值最大
-        sum_tensor = (masked_tensor + rand_tensor).to(device)
-        # 找到每个向量中值为1的位置的索引
-        indices = torch.argmax(sum_tensor, dim=1).to(device)
-
-        # 生成一个与tensor相同大小的全零tensor，并将对应位置设置为1
-        # random_max_indices = torch.zeros_like(max_tensor).to(device)
-        # random_max_indices.scatter_(1, indices.unsqueeze(1), 1)
-        # random_max_indices = torch.nonzero(random_max_indices)[:, 1]
-
-        # 生成一个随机的0、1、2的值
-        random_type = torch.randint(0,2, (L_num, L_num)).to(device)
-        # 生成一个符合 epsilon 概率的随机 mask
-        mask = (torch.rand(L_num, L_num) >= epsilon).long().to(device)
-
-        # 使用 mask 来决定更新的值
-        # updated_values = mask.flatten().unsqueeze(1) * random_max_indices.unsqueeze(1) + (
-        #         1 - mask.flatten().unsqueeze(1)) * random_type.flatten().float().unsqueeze(1)
-        updated_values = mask.flatten().unsqueeze(1) * indices.unsqueeze(1) + (1 - mask.flatten().unsqueeze(1)) * random_type.flatten().float().unsqueeze(1)
-
-        # 重新组织更新后的 tensor
-        updated_tensor = updated_values.view(L_num, L_num).to(device)
-        return updated_tensor
-
-    #画快照
-    def shot_pic(self,type_t_matrix: tensor,i,r):
-
+    #画快照type_t_minus_matrix,type_t_matrix,i,r,profit_matrix,Q_matrix
+    def shot_pic(self,type_t_minus_matrix: tensor,type_t_matrix: tensor,type_t1_matrix: tensor,i,r,profit_matrix,Q_matrix):
         plt.clf()
         plt.close("all")
         # 初始化图表和数据
-        fig = plt.figure()
+        fig = plt.figure(figsize=(40,40))
         ax = fig.add_subplot(1, 1, 1)
-        plt.imshow(type_t_matrix.cpu().numpy(), cmap='binary_r', vmin=0, vmax=1, interpolation='None')
-        self.mkdir('data/Origin_Fermi_Qlearning_extract/shot_pic/r={}/two_type/generated1'.format(r))
-        plt.savefig('data/Origin_Fermi_Qlearning_extract/shot_pic/r={}/two_type/generated1/t={}.png'.format(r,i))
-        self.mkdir('data/Origin_Fermi_Qlearning_extract/shot_pic/r={}/two_type/generated1/type_t_matrix'.format(r))
-        np.savetxt('data/Origin_Fermi_Qlearning_extract/shot_pic/r={}/two_type/generated1/type_t_matrix/{}_r={}_epoches={}_L={}_T={}_第{}次实验数据.txt'.format(str(r),"type_t_matrix",str(r),str(self.epoches),str(self.L_num),str(i),str(self.count)),type_t_matrix.int().cpu().numpy())
-        #plt.show()
-        plt.clf()
-        plt.close("all")
-
-    def shot_pic2(self,type_t_matrix: tensor,i,r):
-        plt.clf()
-        plt.close("all")
-        # 初始化图表和数据
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        cmap = plt.get_cmap('Set1', 4)
+        cmap = plt.get_cmap('Set1', 2)
         # 指定图的大小
         #             plt.figure(figsize=(500, 500))  # 10x10的图
         #             plt.matshow(type_t_matrix.cpu().numpy(), cmap=cmap)
         #             plt.colorbar(ticks=[0, 1, 2], label='Color')
         # 显示图片
         # 定义颜色映射
+        color_map = {
+            #0设置为黑色
+            0: (0, 0, 0),  # 黑色
+            #1设置为白色
+            1: (255, 255, 255),  # 白色
+        }
+        image = np.zeros((L_num, L_num, 3), dtype=np.uint8)
+        for label, color in color_map.items():
+            image[type_t_matrix.cpu() == label] = color
+        #plt.title('Qlearning: '+f"T:{i}")
+        # 隐藏坐标轴刻度标签
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.spines['bottom'].set_linewidth(3)  # 设置x轴底部线条宽度
+        ax.spines['left'].set_linewidth(3)  # 设置y轴左侧线条宽度
+        ax.spines['top'].set_linewidth(3)
+        ax.spines['right'].set_linewidth(3)
+        plt.imshow(image,interpolation='None')
+
+        self.mkdir('data/Origin_Fermi_Qlearning2/shot_pic/r={}/two_type/generated1_3'.format(r))
+        plt.savefig('data/Origin_Fermi_Qlearning2/shot_pic/r={}/two_type/generated1_3/t={}.png'.format(r, i))
+        #plt.show()
+        plt.clf()
+        plt.close("all")
+
+    def shot_save_data(self,type_t_minus_matrix: tensor,type_t_matrix: tensor,type_t1_matrix: tensor,i,r,profit_matrix,Q_matrix):
+        # 遍历每一个Qtable
+        C_indices = torch.arange(type_t_matrix.numel()).to(device)
+        # Qtable中选择的行
+        A_indices = type_t_minus_matrix.view(-1).long()
+        # Qtable中选择的列
+        B_indices = type_t_matrix.view(-1).long()
+        Q_sa_matrix = Q_matrix[C_indices, A_indices, B_indices].view(L_num, L_num)
+        self.mkdir('data/Origin_Fermi_Qlearning2/shot_pic/r={}/two_type/generated1_3/type_t_matrix'.format(r))
+        np.savetxt('data/Origin_Fermi_Qlearning2/shot_pic/r={}/two_type/generated1_3/type_t_matrix/{}_r={}_epoches={}_L={}_T={}_第{}次实验数据.txt'.format(str(r), "type_t_matrix", str(r), str(self.epoches), str(self.L_num), str(i), str(self.count)),type_t_matrix.cpu().numpy())
+        self.mkdir('data/Origin_Fermi_Qlearning2/shot_pic/r={}/two_type/generated1_3/profit_matrix'.format(r))
+        np.savetxt('data/Origin_Fermi_Qlearning2/shot_pic/r={}/two_type/generated1_3/profit_matrix/{}_r={}_epoches={}_L={}_T={}_第{}次实验数据.txt'.format(str(r), "profit_matrix", str(r), str(self.epoches), str(self.L_num), str(i), str(self.count)),profit_matrix.cpu().numpy())
+        self.mkdir('data/Origin_Fermi_Qlearning2/shot_pic/r={}/two_type/generated1_3/Q_sa_matrix'.format(r))
+        np.savetxt('data/Origin_Fermi_Qlearning2/shot_pic/r={}/two_type/generated1_3/Q_sa_matrix/{}_r={}_epoches={}_L={}_T={}_第{}次实验数据.txt'.format(str(r), "Q_sa_matrix", str(r), str(self.epoches), str(self.L_num), str(i), str(self.count)),Q_sa_matrix.cpu().numpy())
+        self.mkdir('data/Origin_Fermi_Qlearning2/shot_pic/r={}/two_type/generated1_3/Q_matrix'.format(r))
+        torch.save(Q_matrix,'data/Origin_Fermi_Qlearning2/shot_pic/r={}/two_type/generated1_3/Q_matrix/{}_r={}_epoches={}_L={}_T={}_第{}次实验数据.txt'.format(str(r), "Q_matrix", str(r), str(self.epoches), str(self.L_num), str(i), str(self.count)))
+
+
+    def shot_pic2(self,type_t_matrix: tensor,i,r):
+        plt.clf()
+        plt.close("all")
+        # 初始化图表和数据
+        fig = plt.figure(figsize=(20, 20))
+        ax = fig.add_subplot(1, 1, 1)
+        cmap = plt.get_cmap('Set1', 4)
         color_map = {
             #0设置为灰色
             0:(128, 128, 128),  # 灰色 DD
@@ -311,10 +337,11 @@ class SPGG_Qlearning(nn.Module):
             image[type_t_matrix.cpu() == label] = color
         plt.title('Qlearning: '+f"T:{i}")
         plt.imshow(image,interpolation='None')
-        self.mkdir('data/Origin_Fermi_Qlearning_extract/shot_pic/r={}/four_type/generated1'.format(r))
-        plt.savefig('data/Origin_Fermi_Qlearning_extract/shot_pic/r={}/four_type/generated1/t={}.png'.format(r,i))
-        self.mkdir('data/Origin_Fermi_Qlearning_extract/shot_pic/r={}/four_type/generated1/type_t_matrix'.format(r))
-        np.savetxt('data/Origin_Fermi_Qlearning_extract/shot_pic/r={}/four_type/generated1/type_t_matrix/{}_r={}_epoches={}_L={}_T={}_第{}次实验数据.txt'.format(str(r), "type_t_matrix", str(r), str(self.epoches), str(self.L_num),str(i), str(self.count)), type_t_matrix.int().cpu().numpy())
+        self.mkdir('data/Origin_Fermi_Qlearning2/shot_pic/r={}/four_type/generated1'.format(r))
+        plt.savefig('data/Origin_Fermi_Qlearning2/shot_pic/r={}/four_type/generated1/t={}.png'.format(r,i))
+        self.mkdir('data/Origin_Fermi_Qlearning2/shot_pic/r={}/four_type/generated1/type_t_matrix'.format(r))
+        torch.save(type_t_matrix.int(), 'data/Origin_Fermi_Qlearning2/shot_pic/r={}/four_type/generated1/type_t_matrix/{}_r={}_epoches={}_L={}_T={}_第{}次实验数据.txt'.format(str(r), "type_t_matrix", str(r), str(self.epoches), str(self.L_num),str(i), str(self.count)))
+        #np.savetxt('data/Origin_Fermi_Qlearning2/shot_pic/r={}/four_type/generated1/type_t_matrix/{}_r={}_epoches={}_L={}_T={}_第{}次实验数据.txt'.format(str(r), "type_t_matrix", str(r), str(self.epoches), str(self.L_num),str(i), str(self.count)), type_t_matrix.int().cpu().numpy())
 
         #plt.show()
         plt.clf()
@@ -356,54 +383,16 @@ class SPGG_Qlearning(nn.Module):
         D_q_mean_matrix = torch.mean(D_indices, dim=0)
         return D_q_mean_matrix.cpu().numpy(), C_q_mean_matrix.cpu().numpy()
 
-    def split_four_policy_type(self,Q_matrix):
-        CC = torch.where((Q_matrix[:, 1, 1] > Q_matrix[:, 1, 0]) & (
-                Q_matrix[:, 0, 0] <= Q_matrix[:, 0, 1]), torch.tensor(1), torch.tensor(0))
-        DD = torch.where((Q_matrix[:, 0, 0] > Q_matrix[:, 0, 1]) & (
-                    Q_matrix[:, 1, 1] <= Q_matrix[:, 1, 0]), torch.tensor(1), torch.tensor(0))
-        CDC = torch.where((Q_matrix[:, 0, 0] < Q_matrix[:, 0, 1]) & (Q_matrix[:, 1, 1] < Q_matrix[:, 1, 0]), torch.tensor(1), torch.tensor(0))
-        StickStrategy=torch.where((Q_matrix[:,0,0]>Q_matrix[:,0,1])&(Q_matrix[:,1,1]>Q_matrix[:,1,0]),torch.tensor(1),torch.tensor(0))
-        return DD.view((L_num,L_num)),CC.view((L_num,L_num)), CDC.view((L_num,L_num)), StickStrategy.view((L_num,L_num))
-
-    def split_five_policy_type(self,Q_matrix,type_t_matrix):
-        CC = torch.where((Q_matrix[:, 1, 1] > Q_matrix[:, 1, 0]) & (
-                Q_matrix[:, 0, 0] <= Q_matrix[:, 0, 1]), torch.tensor(1), torch.tensor(0)).view((L_num,L_num))
-        DD = torch.where((Q_matrix[:, 0, 0] > Q_matrix[:, 0, 1]) & (
-                    Q_matrix[:, 1, 1] <= Q_matrix[:, 1, 0]), torch.tensor(1), torch.tensor(0)).view((L_num,L_num))
-        CDC = torch.where((Q_matrix[:, 0, 0] < Q_matrix[:, 0, 1]) & (Q_matrix[:, 1, 1] < Q_matrix[:, 1, 0]), torch.tensor(1), torch.tensor(0)).view((L_num,L_num))
-        StickStrategy=torch.where((Q_matrix[:,0,0]>Q_matrix[:,0,1])&(Q_matrix[:,1,1]>Q_matrix[:,1,0]),torch.tensor(1),torch.tensor(0)).view((L_num,L_num))
-        CDC_C=CDC*torch.where(type_t_matrix==1,torch.tensor(1),torch.tensor(0))
-        CDC_D=CDC*torch.where(type_t_matrix==0,torch.tensor(1),torch.tensor(0))
-        CDC_neibor_num=0
-        other_neibor_num=0
-        CDC_neibor_DD, CDC_neibor_CC=torch.zeros((L_num,L_num)).to(device),torch.zeros((L_num,L_num)).to(device)
-        if CDC.sum().item()!=0:
-            CDC_neibor_matrix=self.pad_matrix(CDC.to(torch.float64).to(device))
-            CDC_neibor_conv2d = torch.nn.functional.conv2d(CDC_neibor_matrix.view(1,1,L_num+2,L_num+2), neibor_kernel,
-                                                          bias=None, stride=1, padding=0).view(L_num,L_num).to(device)
-            CDC_neibor_num=(CDC_neibor_conv2d*CDC).sum().item()/CDC.sum().item()
-            other_neibor_num = (CDC_neibor_conv2d * (1-CDC)).sum().item() / (1-CDC).sum().item()
-            CDC_neibor_DD=torch.where(CDC_neibor_conv2d*(1-CDC)>0,torch.tensor(1),torch.tensor(0))*DD
-            CDC_neibor_CC=torch.where(CDC_neibor_conv2d*(1-CDC)>0,torch.tensor(1),torch.tensor(0))*CC
-        return DD,CC, CDC, StickStrategy,CDC_D,CDC_C,CDC_neibor_num,other_neibor_num,CDC_neibor_DD,CDC_neibor_CC
-
-    def cal_four_type_value(self,DD,CC,CDC,StickStrategy,profit_matrix):
-        CC_value = profit_matrix * CC
-        DD_value = profit_matrix * DD
-        CDC_value = profit_matrix * CDC
-        StickStrategy_value = profit_matrix * StickStrategy
-        return  DD_value,CC_value, CDC_value, StickStrategy_value
-
-    def cal_five_type_value(self,DD,CC,CDC,StickStrategy,CDC_D,CDC_C,CDC_neibor_DD,CDC_neibor_CC,profit_matrix):
-        CC_value = profit_matrix * CC
-        DD_value = profit_matrix * DD
-        CDC_value = profit_matrix * CDC
-        StickStrategy_value = profit_matrix * StickStrategy
-        CDC_C_value = profit_matrix * CDC_C
-        CDC_D_value = profit_matrix * CDC_D
-        CDC_neibor_DD_value = profit_matrix * CDC_neibor_DD
-        CDC_neibor_CC_value = profit_matrix * CDC_neibor_CC
-        return  DD_value,CC_value, CDC_value, StickStrategy_value,CDC_D_value,CDC_C_value,CDC_neibor_DD_value,CDC_neibor_CC_value
+    def split_eight_policy_type(self,type_t_minus1_matrix,type_t_matrix,type_t1_matrix):
+        CCC=torch.where((type_t_minus1_matrix==1)&(type_t_matrix==1)&(type_t1_matrix==1),torch.tensor(1),torch.tensor(0))
+        CCD=torch.where((type_t_minus1_matrix==1)&(type_t_matrix==1)&(type_t1_matrix==0),torch.tensor(1),torch.tensor(0))
+        CDC=torch.where((type_t_minus1_matrix==1)&(type_t_matrix==0)&(type_t1_matrix==1),torch.tensor(1),torch.tensor(0))
+        CDD=torch.where((type_t_minus1_matrix==1)&(type_t_matrix==0)&(type_t1_matrix==0),torch.tensor(1),torch.tensor(0))
+        DCC=torch.where((type_t_minus1_matrix==0)&(type_t_matrix==1)&(type_t1_matrix==1),torch.tensor(1),torch.tensor(0))
+        DCD=torch.where((type_t_minus1_matrix==0)&(type_t_matrix==1)&(type_t1_matrix==0),torch.tensor(1),torch.tensor(0))
+        DDC=torch.where((type_t_minus1_matrix==0)&(type_t_matrix==0)&(type_t1_matrix==1),torch.tensor(1),torch.tensor(0))
+        DDD=torch.where((type_t_minus1_matrix==0)&(type_t_matrix==0)&(type_t1_matrix==0),torch.tensor(1),torch.tensor(0))
+        return CCC,CCD,CDC,CDD,DCC,DCD,DDC,DDD
 
 
     def run(self,r,alpha,gamma,epsilon,epoches, L_num, device,type):
@@ -415,11 +404,9 @@ class SPGG_Qlearning(nn.Module):
         # type_matrix=torch.tensor(node,dtype=torch.int).to(device)
         type_t_matrix = self.generated_default_type_matrix().to(device)
         type_t_minus_matrix = torch.zeros((L_num, L_num), dtype=torch.float64).to(device)
-        type_t1_matrix = type_t_matrix
-        value_matrix = torch.tensor(L, dtype=torch.float64).to(device)
-        Q = np.zeros((L_num * L_num, 2, 2))
-        profit_matrix=np.zeros((L_num * L_num, 2, 2))
-        Q_matrix = torch.tensor(Q, dtype=torch.float64).to(device)
+        type_t1_matrix = type_t_matrix.clone().detach().to(device)
+        value_matrix = torch.zeros((L_num, L_num), dtype=torch.float64).to(device)
+        Q_matrix = torch.zeros((L_num * L_num, 2, 2), dtype=torch.float64).to(device)
         count_0=torch.where(type_t_matrix == 0, torch.tensor(1), torch.tensor(0)).sum().item()/ (L_num * L_num)
         count_1=1-count_0
 
@@ -434,6 +421,7 @@ class SPGG_Qlearning(nn.Module):
         CC_data,DD_data,CD_data,DC_data=np.array([]),np.array([]),np.array([]),np.array([])
         D_Y= np.append(D_Y, count_0 )
         C_Y = np.append(C_Y, count_1 )
+        CCC_np, CCD_np, CDC_np, CDD_np, DCC_np, DCD_np, DDC_np, DDD_np = np.array([]), np.array([]), np.array([]), np.array([]), np.array([]), np.array([]), np.array([]), np.array([])
 
 
         for i in tqdm(range(epoches), desc='Processing'):
@@ -451,34 +439,37 @@ class SPGG_Qlearning(nn.Module):
                 Q_matrix = self.updateQMatrix(alpha, gamma, type_t_minus_matrix, type_t_matrix, Q_matrix, profit_matrix)
                 # 博弈演化,type变换，策略传播
                 type_t1_matrix = self.fermiUpdate(type_t_minus_matrix,type_t_matrix,Q_matrix).to(device)
+                if i == 0 or i == 10 or (i >= 99 and i <= 110) or (i >= 180 and i <= 221) or (i >= 800 and i <= 901) or i == 999 or (i >= 4980 and i <= 5021) or i == 9999:
+                    self.shot_save_data(type_t_minus_matrix, type_t_matrix,type_t1_matrix, i, r, profit_matrix, Q_matrix)
             # 把一个L的三个type分开
             d_matrix, c_matrix = self.type_matrix_to_three_matrix(type_t1_matrix)
+            CCC, CCD, CDC, CDD, DCC, DCD, DDC, DDD=self.split_eight_policy_type(type_t_minus_matrix,type_t_matrix,type_t1_matrix)
+            CCC_np, CCD_np, CDC_np, CDD_np, DCC_np, DCD_np, DDC_np, DDD_np = np.append(CCC_np, CCC.sum().item()), np.append(CCD_np, CCD.sum().item()), np.append(CDC_np, CDC.sum().item()), np.append(CDD_np, CDD.sum().item()), np.append(DCC_np, DCC.sum().item()), np.append(DCD_np, DCD.sum().item()), np.append(DDC_np, DDC.sum().item()), np.append(DDD_np, DDD.sum().item())
 
             type_t_minus_matrix = type_t_matrix
             type_t_matrix = type_t1_matrix
+
+
+
+            D_Y, C_Y, D_Value, C_Value,all_value, count_0, count_1, CC, DD, CD, DC = self.cal_fra_and_value( D_Y, C_Y,D_Value,C_Value,all_value,type_t_minus_matrix,type_t_matrix,d_matrix,c_matrix,profit_matrix,i)
+
+
+
+
             # if i==0:
-            #     self.shot_pic(type_t_minus_matrix,i,r)
-            # if i==0  or i==9 or i==10 or i==11 or i==12 or i==13 or i==14 or i==15 or i==16 or i==17 or i==18 or i==19 or i==49 or i==99 or i==299 or i==499 or i==799 or i==999 or i==4999 or i==9999 or i==19999 or i==29999 or i==39999 or i==49999:
+            #     self.shot_pic(type_t_minus_matrix,i,r,profit_matrix)
+            # if i==0  or i==9 or i==10 or i==11 or i==12 or i==13 or i==14 or i==15 or i==16 or i==17 or i==18 or i==19 or i==49 or i==99 or i==299 or i==499 or i==799 or i==999 or i==4999 or i==9999 or i==19999 or i==29999 or i==39999 or i==49998 or i==49999 or i==99999 or i==199999 or i==299999 or i==399999 or i==499999 or i==599999 or i==699999 or i==799999 or i==899999 or i==999999:
             #     self.shot_pic(type_t_matrix,i+1,r)
-            # if i==0  or i==9 or i==10 or i==11 or i==12 or i==13 or i==14 or i==15 or i==16 or i==17 or i==18 or i==19 or i==49 or i==99 or i==299 or i==499 or i==799 or i==999 or i==4999 or i==9999 or i==19999 or i==29999 or i==39999 or i==49999:
-            #     self.shot_pic2(four_type_matrix,i+1,r)
-        self.mkdir('data/Origin_Fermi_Qlearning_extract/{}'.format('type_t_matrix'))
-        torch.save(type_t_matrix, 'data/Origin_Fermi_Qlearning_extract/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format('type_t_matrix', 'type_t_matrix',str(r),str(self.epoches),str(self.L_num),str(self.count)))
-        self.mkdir('data/Origin_Fermi_Qlearning_extract/{}'.format('Qtable'))
-        torch.save(Q_matrix, 'data/Origin_Fermi_Qlearning_extract/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format('Qtable', 'Qtable',str(r),str(self.epoches),str(self.L_num),str(self.count)))
-        self.mkdir('data/Origin_Fermi_Qlearning_extract/{}'.format('profit_matrix'))
-        profit_matrix = self.calculation_value(r, type_t_matrix)
-        torch.save(profit_matrix, 'data/Origin_Fermi_Qlearning_extract/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format('profit_matrix', 'profit_matrix',str(r),str(self.epoches),str(self.L_num),str(self.count)))
+            # if i==0 or i==10 or (i>=99 and i<=110) or (i>=180 and i<=220) or (i>=800 and i<=900) or i==999 or (i>=4980 and i<=5020) or i==9999:
+            #   self.shot_pic(type_t_minus_matrix,type_t_matrix,i,r,profit_matrix,Q_matrix)
+
         current_time = datetime.now()
         milliseconds = current_time.microsecond // 1000
         print(f"Current time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}.{milliseconds}")
         if (type == "line2"):
             return D_Y[-1], C_Y[-1]
         elif (type == "line1"):
-            return D_Y, C_Y, D_Value, C_Value, all_value, Q_matrix, type_t_matrix, count_0, count_1, \
-                   CC_data, DD_data, CD_data, DC_data, DD_Y, CC_Y, CDC_Y, StickStrategy_Y, DD_value_np, CC_value_np, CDC_value_np, StickStrategy_value_np, \
-                   Q_D_DD, Q_D_DC, Q_D_CD, Q_D_CC, Q_C_DD, Q_C_DC, Q_C_CD, Q_C_CC
-                   # CDC_D_value_np, CDC_C_value_np, CDC_neibor_num_np, other_neibor_num_np, CDC_neibor_DD_value_np, CDC_neibor_CC_value_np
+            return D_Y, C_Y, D_Value, C_Value, all_value, Q_matrix, type_t_matrix, count_0, count_1,CCC_np,CCD_np,CDC_np,CDD_np,DCC_np,DCD_np,DDC_np,DDD_np
         elif (type == "Qtable"):
             return Q_matrix,type_t_matrix
 
@@ -488,8 +479,9 @@ class SPGG_Qlearning(nn.Module):
             os.makedirs(path)
 
     def save_data(self,type,name,r,count,data):
-        self.mkdir('data/Origin_Fermi_Qlearning_extract/'+str(type))
-        np.savetxt('data/Origin_Fermi_Qlearning_extract/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(type), name,str(r),str(self.epoches),str(self.L_num),str(count)), data)
+        self.mkdir('data/Origin_Fermi_Qlearning2/'+str(type))
+        #torch.save(data, 'data/Origin_Fermi_Qlearning2/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(type), name,str(r),str(self.epoches),str(self.L_num),str(count)))
+        np.savetxt('data/Origin_Fermi_Qlearning2/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(type), name,str(r),str(self.epoches),str(self.L_num),str(count)), data)
         # try:
         #     np.savetxt('data/Origin_Qlearning_NeiborLearning/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(type), name, str(r),str(self.epoches),str(self.L_num), str(count)),data)
         # except:
@@ -538,13 +530,13 @@ class SPGG_Qlearning(nn.Module):
     #         self.run(self.r, self.alpha,self.gamma,self.epsilon,self.epoches, self.L_num,self.device,type="line1")
     #     self.draw_transfer_pic(CC_data, DD_data,CD_data,DC_data, xticks, fra_yticks,r=self.r,epoches=self.epoches)
 
-    def extra_Q_table(self,loop_num):
-        for i in range(loop_num):
-            Q_matrix,type_t_matrix = self.run(self.r, self.alpha,self.gamma,self.epsilon,self.epoches, self.L_num,self.device,type="Qtable")
-            D_q_mean_matrix, C_q_mean_matrix = self.extract_Qtable(Q_matrix, type_t_matrix)
-            print(D_q_mean_matrix,C_q_mean_matrix)
-            self.save_data('D_Qtable', 'D_Qtable',self.r, str(i), D_q_mean_matrix)
-            self.save_data('C_Qtable', 'C_Qtable',self.r, str(i), C_q_mean_matrix)
+    # def extra_Q_table(self,loop_num):
+    #     for i in range(loop_num):
+    #         Q_matrix,type_t_matrix = self.run(self.r, self.alpha,self.gamma,self.epsilon,self.epoches, self.L_num,self.device,type="Qtable")
+    #         D_q_mean_matrix, C_q_mean_matrix = self.extract_Qtable(Q_matrix, type_t_matrix)
+    #         print(D_q_mean_matrix,C_q_mean_matrix)
+    #         self.save_data('D_Qtable', 'D_Qtable',self.r, str(i), D_q_mean_matrix)
+    #         self.save_data('C_Qtable', 'C_Qtable',self.r, str(i), C_q_mean_matrix)
 
     # def hot_pic(self,loop_num1=50,loop_num2 = 50,L_num=100):
     #     alpha=0
@@ -571,45 +563,47 @@ class SPGG_Qlearning(nn.Module):
         for i in range(loop_num):
             print("第i轮:", i)
             self.count = i
-            D_Y, C_Y, D_Value, C_Value, all_value, Q_matrix, type_t_matrix, count_0, count_1,CC_data, DD_data, CD_data, DC_data, \
-            DD_Y, CC_Y, CDC_Y, StickStrategy_Y, DD_value_np, CC_value_np, CDC_value_np, StickStrategy_value_np, \
-            Q_D_DD, Q_D_DC, Q_D_CD, Q_D_CC,Q_C_DD, Q_C_DC, Q_C_CD, Q_C_CC = self.run(self.r, self.alpha, self.gamma, self.epsilon, self.epoches, self.L_num, self.device, type="line1")
-            # self.save_data('D_fra', 'D_fra', r, i, D_Y)
-            # self.save_data('C_fra', 'C_fra', r, i, C_Y)
-            # self.save_data('C_value', 'C_value', r, i, C_Value)
-            # self.save_data('D_value', 'D_value', r, i, D_Value)
-            # self.save_data('all_value', 'all_value', r, i, all_value)
-            # self.save_data('CC_fra', 'CC_fra', r, i, CC_data)
-            # self.save_data('DD_fra', 'DD_fra', r, i, DD_data)
-            # self.save_data('CD_fra', 'CD_fra', r, i, CD_data)
-            # self.save_data('DC_fra', 'DC_fra', r, i, DC_data)
-            # self.save_data('DD_Y', 'DD_Y', r, i, DD_Y)
-            # self.save_data('CC_Y', 'CC_Y', r, i, CC_Y)
-            # self.save_data('CDC_Y', 'CDC_Y', r, i, CDC_Y)
-            # self.save_data('StickStrategy_Y', 'StickStrategy_Y', r, i, StickStrategy_Y)
-            # self.save_data('DD_value_np', 'DD_value_np', r, i, DD_value_np)
-            # self.save_data('CC_value_np', 'CC_value_np', r, i, CC_value_np)
-            # self.save_data('CDC_value_np', 'CDC_value_np', r, i, CDC_value_np)
-            # self.save_data('StickStrategy_value_np', 'StickStrategy_value_np', r, i, StickStrategy_value_np)
-            # self.save_data('Q_D_DD', 'Q_D_DD', r, i, Q_D_DD)
-            # self.save_data('Q_D_DC', 'Q_D_DC', r, i, Q_D_DC)
-            # self.save_data('Q_D_CD', 'Q_D_CD', r, i, Q_D_CD)
-            # self.save_data('Q_D_CC', 'Q_D_CC', r, i, Q_D_CC)
-            # self.save_data('Q_C_DD', 'Q_C_DD', r, i, Q_C_DD)
-            # self.save_data('Q_C_DC', 'Q_C_DC', r, i, Q_C_DC)
-            # self.save_data('Q_C_CD', 'Q_C_CD', r, i, Q_C_CD)
-            # self.save_data('Q_C_CC', 'Q_C_CC', r, i, Q_C_CC)
+            D_Y, C_Y, D_Value, C_Value, all_value, Q_matrix, type_t_matrix, count_0, count_1,\
+            CCC_np,CCD_np,CDC_np,CDD_np,DCC_np,DCD_np,DDC_np,DDD_np= self.run(self.r, self.alpha, self.gamma, self.epsilon, self.epoches, self.L_num, self.device, type="line1")
+            #self.save_data('D_fra', 'D_fra', r, i, D_Y)
+            #self.save_data('C_fra', 'C_fra', r, i, C_Y)
+            #self.save_data('C_value', 'C_value', r, i, C_Value)
+            #self.save_data('D_value', 'D_value', r, i, D_Value)
+            #self.save_data('all_value', 'all_value', r, i, all_value)
+            #self.save_data('CC_fra', 'CC_fra', r, i, CC_data)
+            #self.save_data('DD_fra', 'DD_fra', r, i, DD_data)
+            #self.save_data('CD_fra', 'CD_fra', r, i, CD_data)
+            #self.save_data('DC_fra', 'DC_fra', r, i, DC_data)
+            #self.save_data('Q_D_DD', 'Q_D_DD', r, i, Q_D_DD)
+            #self.save_data('Q_D_DC', 'Q_D_DC', r, i, Q_D_DC)
+            #self.save_data('Q_D_CD', 'Q_D_CD', r, i, Q_D_CD)
+            #self.save_data('Q_D_CC', 'Q_D_CC', r, i, Q_D_CC)
+            #self.save_data('Q_C_DD', 'Q_C_DD', r, i, Q_C_DD)
+            #self.save_data('Q_C_DC', 'Q_C_DC', r, i, Q_C_DC)
+            #self.save_data('Q_C_CD', 'Q_C_CD', r, i, Q_C_CD)
+            #self.save_data('Q_C_CC', 'Q_C_CC', r, i, Q_C_CC)
+            # self.save_data('CCC_np', 'CCC_np', r, i, CCC_np)
+            # self.save_data('CCD_np', 'CCD_np', r, i, CCD_np)
+            # self.save_data('CDC_np', 'CDC_np', r, i, CDC_np)
+            # self.save_data('CDD_np', 'CDD_np', r, i, CDD_np)
+            # self.save_data('DCC_np', 'DCC_np', r, i, DCC_np)
+            # self.save_data('DCD_np', 'DCD_np', r, i, DCD_np)
+            # self.save_data('DDC_np', 'DDC_np', r, i, DDC_np)
+            # self.save_data('DDD_np', 'DDD_np', r, i, DDD_np)
+
 
 
 def draw_shot():
-    r_list=[2.9]
+    r_list=[25/9]
     for r in r_list:
-        SPGG = SPGG_Qlearning(L_num, device, alpha, gamma, epsilon,lr=0.2, r=r, epoches=20000,eta=0.8,cal_transfer=True)
+        SPGG = SPGG_Qlearning(L_num, device, alpha, gamma, epsilon,lr=0.2, r=r, epoches=10000,eta=0.8,cal_transfer=True)
         SPGG.line1_pic(r)
 
+
+
 if __name__ == '__main__':
-    r=3.8
-    SPGG=SPGG_Qlearning(L_num,device,alpha,gamma,epsilon,r=r,epoches=20000,lr=0.2,eta=0.8,cal_transfer=True)
+    r=0
+    #SPGG=SPGG_Qlearning(L_num,device,alpha,gamma,epsilon,r=r,epoches=20000,lr=0.2,eta=0.8,cal_transfer=True)
     #SPGG.run_line2_pic(loop_num1=51,loop_num2 = 10)
     # SPGG.extra_Q_table(10)
     #SPGG=SPGG_Qlearning(L_num,device,alpha,gamma,epsilon,r=r,epoches=10000,cal_transfer=True)

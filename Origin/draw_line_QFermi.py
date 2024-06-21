@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 L_num=200
 #colors=['red','green','blue','black']
@@ -15,6 +16,15 @@ all_value_sum_yticks=[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
 def read_data(path):
     data = np.loadtxt(path)
     return data
+
+def mkdir(path):
+    import os
+    isExists = os.path.exists(path)
+    if not isExists:
+        os.makedirs(path)
+    else:
+        print(path + ' 目录已存在')
+        return False
 
 def draw_line_pic(D_Y,C_Y,xticks,yticks,r,updateMethod,ylim=(0,1),epoches=10000,type="line1",xlable='t',ylabel='Fractions'):
     plt.clf()
@@ -284,6 +294,40 @@ def draw_line_four_type_value(loop_num,name,r,updateMethod,labels,epoches=10000,
     plt.clf()
     plt.close("all")
 
+def save_heat_matrix(r=2.9,epoches=10000,L_num=50,count=0,type="C_fra"):
+    eta_values = 101
+    gamma_values = 101
+    # 创建一个二维数组来保存每个 fine 和 T 组合下的结果
+    results = np.zeros((101, 101))
+
+    # 进行仿真实验并记录结果
+    for j in range(gamma_values):
+        gamma = j / 100
+        for i in range(eta_values):
+            eta = i / 100
+            data = read_data(
+                'data/Origin_Fermi_Qlearning2/heat_pic3_T/eta={}/gammm={}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(
+                    str(eta), str(gamma), str(type), "C_fra", str(r), str(epoches), str(L_num), str(count)))
+            results[j, i] = np.mean(data[-100:])
+
+    name = "data/Origin_Fermi_Qlearning2/heat_pic3_T/r=2.9_eta=0-1_gamma=0-1的热图数据_三位小数版本.csv"
+    #np.savetxt(name, results, delimiter=",")
+    np.savetxt(name, results, delimiter=",", fmt='%.3f')
+
+def draw_heat_pic(name):
+    # 绘制热图
+    results = np.loadtxt(name, delimiter=",")
+    plt.imshow(results, cmap='hot', origin='lower', extent=[0.0, 1.0, 0.0, 1.0], aspect='auto')
+    plt.colorbar(label='Utility')
+    plt.xlabel('eta')
+    plt.ylabel('gamma')
+    plt.title('Heatmap of SPGG')
+    # 保存热图为图像文件
+    plt.savefig("data/Origin_Fermi_Qlearning2/heat_pic3_T/r=2.9_eta=0-1_gamma=0-1的热图数据.png")
+    plt.show()
+
+
+
 
 if __name__ == '__main__':
     r=2.9
@@ -293,6 +337,10 @@ if __name__ == '__main__':
     Origin_Qlearning_NeiborLearning = "Origin_Qlearning_NeiborLearning"
     Origin_Qlearning_Fermi= "Origin_Qlearning_Fermi"
     name=["D_fra","C_fra"]
+
+    save_heat_matrix(r=2.9,epoches=1000000,L_num=50,count=0,type="C_fra")
+    draw_heat_pic("data/Origin_Fermi_Qlearning2/heat_pic3_T/r=2.9_eta=0-1_gamma=0-1的热图数据_三位小数版本.csv")
+
 
     #折线图随时间
     #draw_line1(loop_num,name,r, Qlearning)

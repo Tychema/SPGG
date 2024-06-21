@@ -1,6 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import pandas as pd
+from Function.draw_line_pic import draw_line_pic
+from Function.mkdir import mkdir
+from Origin.Function.read_data import read_data
+from Origin.Function.draw_line1 import draw_line1
+from Origin.Function.draw_line2 import draw_line2
+from Origin.Function.draw_value_line import draw_value_line,draw_all_value_line
+from Origin.Function.draw_four_line import draw_transfer_pic,cal_transfer_pic
+from Function.shot_pic import draw_all_shot_pic_torch
 L_num=200
 #colors=['red','green','blue','black']
 colors=[(217/255,82/255,82/255),(31/255,119/255,180/255),(120/255,122/255,192/255),(161/255,48/255,63/255),'gold','green']
@@ -12,182 +20,14 @@ fra_yticks=[0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.
 # profite_yticks=[ 8,10,12,14,16,18,20,22]
 profite_yticks=[ 0,2,4,6,8,10,12,14,16,18,20,22]
 all_value_sum_yticks=[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
-def read_data(path):
-    data = np.loadtxt(path)
-    return data
 
-def mkdir(path):
-    import os
-    if not os.path.exists(path):
-        os.makedirs(path)
 
-def draw_line_pic(D_Y,C_Y,xticks,yticks,r,updateMethod,ylim=(0,1),epoches=10000,type="line1",xlable='t',ylabel='Fractions'):
-    plt.clf()
-    plt.close("all")
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    if(type=="line1"):
-        D_Y = np.insert(D_Y, 0, D_Y[0])
-        C_Y = np.insert(C_Y, 0, C_Y[0])
-        D_X=np.arange(D_Y.shape[0])
-        C_X=np.arange(C_Y.shape[0])
-    else:
-        D_X = np.arange(D_Y.shape[0]) / 10
-        C_X = np.arange(C_Y.shape[0]) / 10
-    plt.plot(D_X, D_Y, color=colors[0],marker='s',markersize=5,markerfacecolor='none',label='D', linestyle='-', linewidth=1, markeredgecolor='r', markeredgewidth=1)
-    plt.plot(C_X, C_Y, color=colors[1],marker='s',markersize=5,markerfacecolor='none',label='C', linestyle='-', linewidth=1, markeredgecolor='b', markeredgewidth=1)
-    if(updateMethod=="Origin_Qlearning" and type=="line2"):
-        plt.plot([3.6,4.7,5.0],[D_Y[36],D_Y[47],D_Y[50]],color='black',marker='o',markersize=5,markeredgecolor='black',markeredgewidth=1,linestyle='')
-        plt.plot([3.6,4.7,5.0],[C_Y[36],C_Y[47],C_Y[50]],color='black',marker='o',markersize=5,markeredgecolor='black',markeredgewidth=1,linestyle='')
-        plt.axvline(x=3.6, ymin=0, ymax=1, color='lightgray', linestyle='--')  # 画一条垂直的虚线
-        plt.axvline(x=4.7, ymin=0, ymax=1, color='lightgray', linestyle='--')  # 画一条垂直的虚线
-        plt.axvline(x=5.0, ymin=0, ymax=1, color='lightgray', linestyle='--')  # 画一条垂直的虚线
-    elif(updateMethod=="Origin_Fermi" and type=="line2"):
-        plt.plot([3.7,3.9,5.0],[D_Y[37],D_Y[39],D_Y[50]],color='black',marker='o',markersize=5,markeredgecolor='black',markeredgewidth=1,linestyle='')
-        plt.plot([3.7,3.9,5.0],[C_Y[37],C_Y[39],C_Y[50]],color='black',marker='o',markersize=5,markeredgecolor='black',markeredgewidth=1,linestyle='')
-        plt.axvline(x=3.7, ymin=0, ymax=1, color='lightgray', linestyle='--')  # 画一条垂直的虚线
-        plt.axvline(x=3.9, ymin=0, ymax=1, color='lightgray', linestyle='--')  # 画一条垂直的虚线
-        plt.axvline(x=5.0, ymin=0, ymax=1, color='lightgray', linestyle='--')  # 画一条垂直的虚线
-    plt.xticks(xticks)
-    plt.yticks(yticks)
-    plt.ylim(ylim)
-    if(type=="line1"):
-        plt.xscale('log')
-    plt.ylabel(ylabel)
-    plt.xlabel(xlable)
-    plt.title(str(updateMethod[7:])+': '+'L='+str(L_num)+' r='+str(r)+' T='+str(epoches))
-    plt.legend()
-    mkdir('data/Line_pic')
-    plt.savefig('data/Line_pic/{}_L={}_r={}_T={}.png'.format(updateMethod,L_num, '0-5', epoches))
-    plt.pause(0.001)
-    plt.clf()
-    plt.close("all")
 
-def draw_line2(loop_num1,loop_num2,updateMethod,epoches=10000,L_num=200):
-    D_Final_fra = np.array([])
-    C_Final_fra = np.array([])
-    r = 0
-    for i in range(loop_num1):
-        D_Loop_fra=0
-        C_Loop_fra=0
-        for count in range(loop_num2):
-            C_Y=read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod),'C_fra', 'C_fra', r/10, epoches,L_num, str(count)))
-            D_Y=read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod),'D_fra', 'D_fra', r/10, epoches,L_num, str(count)))
-            D_Loop_fra = D_Loop_fra+D_Y[-1]
-            C_Loop_fra = C_Loop_fra+C_Y[-1]
-        D_Final_fra = np.append(D_Final_fra, D_Loop_fra)
-        C_Final_fra = np.append(C_Final_fra, C_Loop_fra)
-        r = r + 1
-    D_Final_fra = D_Final_fra / loop_num2
-    C_Final_fra = C_Final_fra / loop_num2
 
-    draw_line_pic( D_Final_fra, C_Final_fra, r_xticks, fra_yticks,r='0-5',updateMethod=updateMethod, epoches=epoches, type="line2", ylabel='Fractions', xlable='r')
 
-def draw_line1(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(0,1),yticks=fra_yticks):
-    plt.clf()
-    plt.close("all")
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    i=0
-    for na in name:
-        final_data = np.zeros(epoches+1)
-        for count in range(loop_num):
-            data=read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod),na, na, r, epoches,L_num, str(count)))
-            final_data=final_data+data
-        final_data=final_data/loop_num
-        final_data = np.insert(final_data, 0, final_data[0])
-        print(final_data[-1])
-        plt.plot(np.arange(final_data.shape[0]), final_data, color=colors[i], marker='o',label=labels[i], linestyle='-', linewidth=1, markeredgecolor=colors[i], markersize=1,
-                 markeredgewidth=1)
-        i=i+1
-    plt.xticks(xticks)
-    plt.yticks(yticks)
-    plt.ylim(ylim)
-    plt.xscale('log')
-    plt.ylabel('Fractions')
-    plt.xlabel('t')
-    plt.title(str(updateMethod[7:])+': ' + 'L' + str(L_num) + ' r=' + str(r) + ' T=' + str(epoches))
-    plt.legend()
-    mkdir('data/Line_pic')
-    plt.savefig('data/Line_pic/r={}/{}_L={}_r={}_T={}.png'.format(r,updateMethod,L_num, r, epoches))
-    plt.pause(0.001)
-    plt.clf()
-    plt.close("all")
 
-def draw_value_line(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(0,1)):
-    plt.clf()
-    plt.close("all")
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    i=0
-    for na in name:
-        final_data = np.zeros(epoches)
-        for count in range(loop_num):
-            data=read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod),na, na, r, epoches,L_num, str(count)))
-            final_data=final_data+data
-        final_data=final_data/loop_num
-        final_data = np.insert(final_data, 0, final_data[0])
-        plt.plot(np.arange(final_data.shape[0]), final_data, color=colors[i], marker='o',label=labels[i], linestyle='-', linewidth=1, markeredgecolor=colors[i], markersize=1,
-                 markeredgewidth=1)
-        i=i+1
-    plt.xticks(xticks)
-    plt.yticks(profite_yticks)
-    plt.ylim(ylim)
-    plt.xscale('log')
-    plt.ylabel('Average Payoffs')
-    plt.xlabel('t')
-    plt.title(str(updateMethod[7:])+':' + 'L' + str(L_num) + ' r=' + str(r) + ' T=' + str(epoches))
-    plt.legend()
-    mkdir('data/Line_pic')
-    plt.savefig('data/Line_pic/r={}/{}_value_L={}_r={}_T={}.png'.format(r,updateMethod,L_num, r, epoches))
-    plt.pause(0.001)
-    plt.clf()
-    plt.close("all")
 
-def draw_transfer_pic( DD_data,CC_data, CD_data, DC_data, xticks, yticks,labels,r,updateMethod, na,ylim=(0, 1), epoches=10000, ylable='Fractions'):
-    plt.clf()
-    plt.close("all")
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    DD_data = np.insert(DD_data, 0, DD_data[0])
-    CC_data = np.insert(CC_data, 0, CC_data[0])
-    CD_data = np.insert(CD_data, 0, CD_data[0])
-    DC_data = np.insert(DC_data, 0, DC_data[0])
-    plt.plot(np.arange(DD_data.shape[0]), DD_data, color=colors[0],marker='o', label=labels[0], linestyle='-', linewidth=1, markeredgecolor=colors[0], markersize=1,
-             markeredgewidth=1)
-    plt.plot(np.arange(CC_data.shape[0]), CC_data, color=colors[1],marker='o', label=labels[1], linestyle='-', linewidth=1, markeredgecolor=colors[1],
-             markersize=1, markeredgewidth=1)
-    plt.plot(np.arange(CD_data.shape[0]), CD_data, color=colors[2],marker='o', label=labels[2], linestyle='-', linewidth=1, markeredgecolor=colors[2], markersize=1,markeredgewidth=1)
-    plt.plot(np.arange(DC_data.shape[0]), DC_data,color=colors[3],marker='o', label=labels[3], linestyle='-', linewidth=1, markeredgecolor=colors[3],
-             markersize=1, markeredgewidth=1)
-    plt.xticks(xticks)
-    plt.yticks(yticks)
-    plt.ylim(ylim)
-    plt.xscale('log')
-    plt.ylabel(ylable)
-    plt.xlabel('t')
-    plt.title(str(updateMethod[7:])+': ' + 'L' + str(L_num) + ' r=' + str(r) + ' T=' + str(epoches))
-    plt.legend()
-    mkdir('data/Line_pic')
-    plt.savefig('data/Line_pic/r={}/{}_{}_L={}_r={}_T={}.png'.format(r,updateMethod,na,L_num, r, epoches))
-    plt.pause(0.001)
-    plt.clf()
-    plt.close("all")
 
-def cal_transfer_pic(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(0,1)):
-    data=[]
-    for i in range(4):
-        final_data = np.zeros(epoches)
-        for count in range(loop_num):
-            loop_data = read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod), name[i], name[i], r, epoches, L_num,
-                                                                         str(count)))
-            final_data= final_data + loop_data
-        data.append(final_data)
-    data=np.array(data)
-    data = data / loop_num
-
-    draw_transfer_pic( data[0], data[1],data[2],data[3], xticks, fra_yticks, r=r,updateMethod=updateMethod,
-                           epoches=epoches, ylim=ylim)
 
 def draw_all_value_line(loop_num, name, r, epoches=10000, L_num=200, ylim=(0, 1)):
     updateMethod=["Origin_Qlearning","Origin_Fermi"]
@@ -235,122 +75,133 @@ def draw_line_qtable(loop_num,name,r,updateMethod,epoches=10000,L_num=200,ylim=(
     data = data / loop_num
     draw_transfer_pic( data[0], data[1],data[2],data[3], xticks, fra_yticks, r=r,updateMethod=updateMethod, epoches=epoches, ylim=ylim)
 
-def draw_line_four_type(loop_num,name,r,updateMethod,labels,na,epoches=10000,L_num=200,ylim=(0,1),yticks=fra_yticks,ylabel='Fractions'):
-    data=[]
-    for i in range(len(name)):
-        final_data = np.zeros(epoches)
-        for count in range(loop_num):
-            loop_data = read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod), name[i], name[i], r, epoches, L_num,
-                                                                         str(count)))
-            final_data= final_data + loop_data
-        data.append(final_data)
-    data=np.array(data)
-    data = data / loop_num
-    draw_transfer_pic( data[0], data[1],data[2],data[3], xticks, yticks,labels,na=na,r=r,updateMethod=updateMethod, epoches=epoches, ylim=ylim, ylable=ylabel)
+def com_zhuzhuang(names1, names2, r, updateMethod, epoches=10000, L_num=200):
+    colors = [(217 / 255, 82 / 255, 82 / 255), (31 / 255, 119 / 255, 180 / 255)]
 
-def draw_line_four_type_value(loop_num,name,r,updateMethod,labels,epoches=10000,L_num=200,ylim=(0,1),yticks=fra_yticks,ylabel='Fractions'):
-    data=[]
-    for i in range(len(name)):
-        final_data = np.zeros(epoches)
-        for count in range(loop_num):
-            loop_data = read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod), name[i], name[i], r, epoches, L_num,
-                                                                         str(count)))
-            final_data= final_data + loop_data
-        data.append(final_data)
-    data=np.array(data)
-    data = data / loop_num
-    plt.clf()
-    plt.close("all")
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    DD_data = np.insert(data[0], 0, data[0])
-    CC_data = np.insert(data[1], 0, data[1])
-    CDC_data = np.insert(data[2], 0, data[2])
-    SS_data = np.insert(data[3], 0, data[3])
-    CDC_D_data = np.insert(data[4], 0, data[4])
-    CDC_C_data = np.insert(data[5], 0, data[5])
-    plt.plot(np.arange(DD_data.shape[0]), DD_data, color=colors[0],marker='o', label=labels[0], linestyle='-', linewidth=1, markeredgecolor=colors[0], markersize=1,
-             markeredgewidth=1)
-    plt.plot(np.arange(CC_data.shape[0]), CC_data, color=colors[1],marker='o', label=labels[1], linestyle='-', linewidth=1, markeredgecolor=colors[1],
-             markersize=1, markeredgewidth=1)
-    plt.plot(np.arange(CDC_data.shape[0]), CDC_data, color=colors[2],marker='o', label=labels[2], linestyle='-', linewidth=1, markeredgecolor=colors[2], markersize=1,markeredgewidth=1)
-    plt.plot(np.arange(SS_data.shape[0]), SS_data,color=colors[3],marker='o', label=labels[3], linestyle='-', linewidth=1, markeredgecolor=colors[3],
-             markersize=1, markeredgewidth=1)
-    plt.plot(np.arange(CDC_D_data.shape[0]), CDC_D_data, color=colors[4],marker='s', label=labels[4], linestyle='-', linewidth=1, markeredgecolor=colors[4], markersize=1,
-                markeredgewidth=1)
-    plt.plot(np.arange(CDC_C_data.shape[0]), CDC_C_data, color=colors[5],marker='s', label=labels[5], linestyle='-', linewidth=1, markeredgecolor=colors[5], markersize=1,
-                markeredgewidth=1)
-    plt.xticks(xticks)
-    plt.yticks(yticks)
-    plt.ylim(ylim)
-    plt.xscale('log')
-    plt.ylabel(ylabel)
-    plt.xlabel('t')
-    plt.title(str(updateMethod[7:])+': ' + 'L' + str(L_num) + ' r=' + str(r) + ' T=' + str(epoches))
-    plt.legend()
-    plt.pause(0.001)
-    plt.clf()
-    plt.close("all")
+    # 准备数据和绘图
+    fig, axs = plt.subplots(1, 2, figsize=(15, 7))  # 初始化一个包含两个子图的figure
+
+    # 简化后的数据6
+    D_data = {
+        'Condition': ['Cond1', 'Cond2'],
+        'D': [20, 22],
+        'C': [15, 17],
+    }
+    C_data = {
+        'Condition': ['Cond1', 'Cond2'],
+        'D': [20, 22],
+        'C': [15, 17],
+    }
+    D_df = pd.DataFrame(D_data)
+    C_df = pd.DataFrame(C_data)
+    # 假设的读取数据过程，实际应替换为正确的数据读取逻辑
+    D_DD = read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod), names1[0], names1[0], r, epoches,L_num, str(loop_num)))[-1]
+    D_DC = read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod), names1[1], names1[1], r, epoches,L_num, str(loop_num)))[-1]
+    D_CD = read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod), names1[2], names1[2], r, epoches,L_num, str(loop_num)))[-1]
+    D_CC = read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod), names1[3], names1[3], r, epoches,L_num, str(loop_num)))[-1]
+    C_DD = read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod), names2[0], names2[0], r, epoches,L_num, str(loop_num)))[-1]
+    C_DC = read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod), names2[1], names2[1], r, epoches,L_num, str(loop_num)))[-1]
+    C_CD = read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod), names2[2], names2[2], r, epoches,L_num, str(loop_num)))[-1]
+    C_CC = read_data('data/{}/{}/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(updateMethod), names2[3], names2[3], r, epoches,L_num, str(loop_num)))[-1]
+    D_df['D'] = [D_DD, D_DC]
+    D_df['C'] = [D_CD, D_CC]
+    C_df['D'] = [C_DD, C_DC]
+    C_df['C'] = [C_CD, C_CC]
+
+    # 绘制柱状图5
+    bar_width = 0.25
+    gap = 0.23
+    r1 = np.arange(len(D_df['D']))
+    r2 = [x + bar_width + gap for x in r1]
+    bars1 = axs[0].bar(r1, D_df['D'], color='black', width=bar_width, edgecolor='grey')
+    bars2 = axs[0].bar(r2, D_df['C'], color='grey', width=bar_width, edgecolor='grey')
+    bars3 = axs[1].bar(r1, C_df['D'], color='black', width=bar_width, edgecolor='grey')
+    bars4 = axs[1].bar(r2, C_df['C'], color='grey', width=bar_width, edgecolor='grey')
+    axs[0].set_ylabel('Q')
+    axs[0].set_xticks([])
+    axs[1].set_xticks([])
+    axs[1].set_ylabel('Q')
+    axs[0].bar_label(bars1,padding=3)
+    axs[0].bar_label(bars2,padding=3)
+    axs[1].bar_label(bars3,padding=3)
+    axs[1].bar_label(bars4,padding=3)
+
+    # 在图表下方创建第一个表格
+    table_data_1 = [['D', 'C', 'D', 'C']]  # 用空字符串填充以匹配列宽
+    the_table1 = axs[0].table(cellText=table_data_1,
+                           colWidths=[0.12] * 4,
+                           cellLoc='center',
+                           bbox=[0, -0.08, 1, 0.08])  # 调整bbox以适应图表大小
+    the_table3 = axs[1].table(cellText=table_data_1,
+                           colWidths=[0.12] * 4,
+                           cellLoc='center',
+                           bbox=[0, -0.08, 1, 0.08])  # 调整bbox以适应图表大小
+
+    the_table1.auto_set_font_size(False)
+    the_table1.set_fontsize(15)
+    the_table3.auto_set_font_size(False)
+    the_table3.set_fontsize(15)
+
+    # 在第一个表格下方创建第二个表格
+    table_data_2 = [['D', 'C']]
+    the_table2 = axs[0].table(cellText=table_data_2,
+                           colWidths=[0.12] * 2,
+                           cellLoc='center',
+                           bbox=[0, -0.16, 1, 0.08])  # 调整bbox以适应图表大小
+    the_table4 = axs[1].table(cellText=table_data_2,
+                           colWidths=[0.12] * 2,
+                           cellLoc='center',
+                           bbox=[0, -0.16, 1, 0.08])  # 调整bbox以适应图表大小
+
+    the_table2.auto_set_font_size(False)
+    the_table2.set_fontsize(15)
+    the_table4.auto_set_font_size(False)
+    the_table4.set_fontsize(15)
+
+    # 调整子图间距
+    plt.tight_layout()
+
+    # 显示图表
+    plt.show()
+
+
+
 
 
 if __name__ == '__main__':
-    r=2.9
+    r=3.3
     loop_num=10
-    Fermi="Origin_Fermi"
-    Qlearning="Origin_Qlearning"
-    Origin_Qlearning_NeiborLearning = "Origin_Qlearning_NeiborLearning"
-    Origin_Qlearning_Fermi= "Origin_Qlearning_Fermi"
-    Origin_Fermi_Qlearning1="Origin_Fermi_Qlearning1"
+
     Origin_Fermi_Qlearning2="Origin_Fermi_Qlearning2"
-    Origin_selfQlearning="Origin_selfQlearning"
     name=["D_fra","C_fra"]
 
+    # for r in [2.5,25/9,3.3]:
+    #     draw_line1(loop_num,name,r, Origin_Fermi_Qlearning2,generated='')
+
+
+    for r in [2.5,25/9,3.3]:
+        draw_all_shot_pic_torch(r,epoches=10000,L_num=200,count=0,updateMethod=Origin_Fermi_Qlearning2,generated="generated1")
+
     #折线图随时间
-    #draw_line1(loop_num,name,r, Qlearning)
-    #draw_line1(loop_num,name,r, Fermi)
-    #draw_line1(loop_num, name, r, Origin_Qlearning_NeiborLearning)
-    #draw_line1(loop_num, name, r, Origin_Qlearning_Fermi)
-    #draw_line1(loop_num, name, r, Origin_Fermi_Qlearning1,epoches=20000)
-    draw_line1(loop_num, name, r, Origin_selfQlearning,epoches=10000)
+    #draw_line1(loop_num, name, r, Origin_Fermi_Qlearning2,epoches=10000,L_num=200)
+    #draw_line1(loop_num, name, r, Origin_selfQlearning,epoches=10000)
 
     #折线图随r
-    #draw_line2(51,10,Qlearning)
-    #draw_line2(51,10,Fermi)
     #draw_line2(51, 10, Origin_Fermi_Qlearning1,epoches=20000)
-    draw_line2(51, 10, Origin_selfQlearning,epoches=10000)
+    #draw_line2(51, 10, Origin_selfQlearning,epoches=10000)
 
     #all_value折线图
     #draw_all_value_line(loop_num,'all_value',r,ylim=(0,22))
 
     #value折线图
-    #draw_value_line(loop_num,['D_value','C_value'],r,Origin_Fermi_Qlearning1,ylim=(0,14),epoches=20000)
-    draw_value_line(loop_num,['D_value','C_value'],r,Origin_selfQlearning,ylim=(0,14),epoches=10000)
-
-    #transfer折线图
-    #cal_transfer_pic(loop_num, ["CC_fra", "DD_fra", "CD_fra", "DC_fra"], r=r, updateMethod="Origin_Qlearning")
-
-
-    #qtable转换
-    #draw_line_qtable(loop_num, ["CC_fra", "DD_fra", "CD_fra", "DC_fra"], r=4.9, updateMethod="Origin_Qlearning")
-
-    #type_four一套
-    #draw_line1(loop_num,name,r, Qlearning)
-    #draw_value_line(loop_num,['D_value','C_value'],r,"Origin_Qlearning",ylim=(0,12))
-    #draw_line_four_type(loop_num, ["DD_Y", "CC_Y", "CDC_Y", "StickStrategy_Y"], r=r, updateMethod="Origin_Qlearning",labels=type_labels,ylim=(0,1),yticks=fra_yticks,ylabel='Fractions')
-    #draw_line_four_type(loop_num, ["DD_value_np", "CC_value_np", "CDC_value_np", "StickStrategy_value_np"], r=r, updateMethod="Origin_Qlearning",labels=type_labels,ylim=(0,12),yticks=profite_yticks,ylabel='Average Payoffs')
-
-    #type_five一套
-    #draw_line1(loop_num,name,r, Qlearning)
-    #draw_value_line(loop_num,['D_value','C_value'],r,"Origin_Qlearning",ylim=(0,12))
-    #draw_line_four_type(loop_num, ["DD_Y", "CC_Y", "CDC_Y", "StickStrategy_Y"], r=r, updateMethod="Origin_Qlearning",labels=type_labels,ylim=(0,1),yticks=fra_yticks,ylabel='Fractions')
-    #draw_line_four_type_value(loop_num, ["DD_value_np", "CC_value_np", "CDC_value_np", "StickStrategy_value_np","CDC_D_value_np","CDC_C_value_np"], r=r, updateMethod="Origin_Qlearning",labels=['DD','CC','CDC','StickStrategy','CDC_D','CDC_C'],ylim=(8,12),yticks=profite_yticks,ylabel='Average Payoffs')
-
-    #CDC_neibor_num
-    #draw_line1(loop_num, ["CDC_neibor_num_np"], r, Qlearning,ylim=(0,5),yticks=[0,1,2,3,4,5])
-    #draw_value_line(loop_num, ["CDC_neibor_DD_value_np","CDC_neibor_CC_value_np"], r, Qlearning,ylim=(0,14))
+    #draw_value_line(loop_num,['D_value','C_value'],r,Origin_Fermi_Qlearning2,ylim=(0,14),epoches=50000)
+    #draw_value_line(loop_num,['D_value','C_value'],r,Origin_selfQlearning,ylim=(0,14),epoches=10000)
 
     #Qtable
-    #draw_line_four_type(loop_num, ["Q_D_DD", "Q_D_DC", "Q_D_CD", "Q_D_CC"], epoches=20000, r=int(r*10),updateMethod=Origin_Fermi_Qlearning1, labels=['D_DD', 'D_CD', 'D_DC', 'D_CC'], ylim=(0, 60),yticks=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60], ylabel='Fractions')
-    #draw_line_four_type(loop_num, ["Q_C_DD", "Q_C_DC", "Q_C_CD", "Q_C_CC"],epoches=20000, r=int(r*10), updateMethod=Origin_Fermi_Qlearning1,labels=['C_DD','C_CD','C_DC','C_CC'], ylim=(0, 60), yticks=[ 0,5,10,15,20,25,30,35,40,45,50,55,60], ylabel='Fractions')
-    draw_line_four_type(loop_num, ["Q_D_DD", "Q_D_DC", "Q_D_CD", "Q_D_CC"], na='QtableD',epoches=10000, r=r,updateMethod=Origin_selfQlearning, labels=['D_DD', 'D_CD', 'D_DC', 'D_CC'], ylim=(0, 200),yticks=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,200], ylabel='Fractions')
-    draw_line_four_type(loop_num, ["Q_C_DD", "Q_C_DC", "Q_C_CD", "Q_C_CC"],na='QtableC',epoches=10000, r=r, updateMethod=Origin_selfQlearning,labels=['C_DD','C_CD','C_DC','C_CC'], ylim=(0, 200), yticks=[ 0,5,10,15,20,25,30,35,40,45,50,55,60,200], ylabel='Fractions')
+    #draw_line_four_type(5, ["Q_D_DD", "Q_D_DC", "Q_D_CD", "Q_D_CC"], na='QtableD',epoches=50000, r=r,updateMethod=Origin_Fermi_Qlearning2, labels=['D_DD', 'D_CD', 'D_DC', 'D_CC'], ylim=(0, 40),yticks=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60], ylabel='Fractions')
+    #draw_line_four_type(5, ["Q_C_DD", "Q_C_DC", "Q_C_CD", "Q_C_CC"],na='QtableD',epoches=50000, r=r, updateMethod=Origin_Fermi_Qlearning2,labels=['C_DD','C_CD','C_DC','C_CC'], ylim=(0, 40), yticks=[ 0,5,10,15,20,25,30,35,40,45,50,55,60], ylabel='Fractions')
+    #draw_line_four_type(loop_num, ["Q_D_DD", "Q_D_DC", "Q_D_CD", "Q_D_CC"], na='QtableD',epoches=10000, r=r,updateMethod=Origin_selfQlearning, labels=['D_DD', 'D_CD', 'D_DC', 'D_CC'], ylim=(0, 200),yticks=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,200], ylabel='Fractions')
+    #draw_line_four_type(loop_num, ["Q_C_DD", "Q_C_DC", "Q_C_CD", "Q_C_CC"],na='QtableC',epoches=10000, r=r, updateMethod=Origin_selfQlearning,labels=['C_DD','C_CD','C_DC','C_CC'], ylim=(0, 200),yticks=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,200], ylabel='Fractions')
+    #zhuzhuangtu(5,["Q_D_DD", "Q_D_DC", "Q_D_CD", "Q_D_CC"],r,Origin_Fermi_Qlearning2,epoches=50000,L_num=200)
+    #zhuzhuangtu(5, ["Q_C_DD", "Q_C_DC", "Q_C_CD", "Q_C_CC"], r, Origin_Fermi_Qlearning2, epoches=50000, L_num=200)
+    #com_zhuzhuang(["Q_D_DD", "Q_D_DC", "Q_D_CD", "Q_D_CC"], ["Q_C_DD", "Q_C_DC", "Q_C_CD", "Q_C_CC"], r, Origin_Fermi_Qlearning2, epoches=50000, L_num=200)

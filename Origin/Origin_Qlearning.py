@@ -180,121 +180,13 @@ class SPGG_Qlearning(nn.Module):
         mean_of_positive_elements = (value_tensor.to(torch.float32).sum()) / ((positive_num + negetive_num).sum())
         return mean_of_positive_elements.to("cpu")
 
-    #画折线图
-    def draw_line_pic(self,D_Y,C_Y,xticks,yticks,r,ylim=(0,1),epoches=10000,type="line1",xlable='T',ylabel='fraction'):
-        plt.clf()
-        plt.close("all")
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        plt.plot(np.arange(D_Y.shape[0]), D_Y, 'ro', label='betray', linestyle='-', linewidth=1, markeredgecolor='r', markersize=1,
-                 markeredgewidth=1)
-        plt.plot(np.arange(C_Y.shape[0]), C_Y, 'bo', label='cooperation', linestyle='-', linewidth=1, markeredgecolor='b',
-                 markersize=1, markeredgewidth=1)
-        plt.xticks(xticks)
-        plt.yticks(yticks)
-        plt.ylim(ylim)
-        if(type=="line1"):
-            plt.xscale('log')
-        plt.ylabel(ylabel)
-        plt.xlabel(xlable)
-        plt.title('Q_learning:'+' L='+str(self.L_num)+' r='+str(r)+' T='+str(epoches))
-        plt.pause(0.001)
-        plt.clf()
-        plt.close("all")
+    def shot_save_data(self, type_t_matrix: tensor,profit_matrix, i, r,generated="generated1"):
+        self.mkdir('data/Origin_Qlearning/shot_pic/r={}/two_type/{}/type_t_matrix'.format(r,str(generated)))
+        np.savetxt('data/Origin_Qlearning/shot_pic/r={}/two_type/{}/type_t_matrix/{}_r={}_epoches={}_L={}_T={}_第{}次实验数据.txt'.format(str(r),str(generated), "type_t_matrix", str(r), str(self.epoches), str(self.L_num),str(i),str(self.count)),type_t_matrix.cpu().numpy())
+        self.mkdir('data/Origin_Qlearning/shot_pic/r={}/two_type/{}/profit_matrix'.format(r,str(generated)))
+        np.savetxt('data/Origin_Qlearning/shot_pic/r={}/two_type/{}/profit_matrix/{}_r={}_epoches={}_L={}_T={}_第{}次实验数据.txt'.format(str(r),str(generated),"profit_matrix", str(r), str(self.epoches), str(self.L_num), str(i), str(self.count)),profit_matrix.cpu().numpy())
 
-    #画转移图
-    def draw_transfer_pic(self,  CC_data, DD_data, CD_data, DC_data, xticks, yticks, r, ylim=(0, 1), epoches=10000):
-        plt.clf()
-        plt.close("all")
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        plt.plot(np.arange(DD_data.shape[0]), DD_data, color='red',marker='o', label='DD', linestyle='-', linewidth=1, markeredgecolor='red', markersize=1,
-                 markeredgewidth=1)
-        plt.plot(np.arange(CC_data.shape[0]), CC_data, color='blue',marker='*', label='CC', linestyle='-', linewidth=1, markeredgecolor='blue',
-                 markersize=1, markeredgewidth=1)
-        plt.plot(np.arange(CD_data.shape[0]), CD_data, color='black',marker='o', label='CD', linestyle='-', linewidth=1, markeredgecolor='black', markersize=1,markeredgewidth=1)
-        plt.plot(np.arange(DC_data.shape[0]), DC_data,color='gold',marker='o', label='DC', linestyle='-', linewidth=1, markeredgecolor='gold',
-                 markersize=1, markeredgewidth=1)
-        plt.xticks(xticks)
-        plt.yticks(yticks)
-        plt.ylim(ylim)
-        plt.xscale('log')
-        plt.ylabel('fraction')
-        plt.xlabel('T')
-        plt.title('Q_learning:'+'L'+str(self.L_num)+' r='+str(r)+' T='+str(epoches))
-        plt.legend()
-        plt.pause(0.001)
-        plt.clf()
-        plt.close("all")
 
-    #画快照
-    def shot_pic(self,type_t_matrix: tensor,i,r):
-        plt.clf()
-        plt.close("all")
-        # 初始化图表和数据
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        cmap = plt.get_cmap('Set1', 2)
-        # 指定图的大小
-        #             plt.figure(figsize=(500, 500))  # 10x10的图
-        #             plt.matshow(type_t_matrix.cpu().numpy(), cmap=cmap)
-        #             plt.colorbar(ticks=[0, 1, 2], label='Color')
-        # 显示图片
-        # 定义颜色映射
-        color_map = {
-            #0设置为黑色
-            0: (0, 0, 0),  # 黑色
-            #1设置为白色
-            1: (255, 255, 255),  # 白色
-        }
-        image = np.zeros((L_num, L_num, 3), dtype=np.uint8)
-        for label, color in color_map.items():
-            image[type_t_matrix.cpu() == label] = color
-        plt.title('Qlearning: '+f"T:{i}")
-        plt.imshow(image,interpolation='None')
-        self.mkdir('data/Origin_Qlearning/shot_pic/r={}/two_type/generated1'.format(r))
-        plt.savefig('data/Origin_Qlearning/shot_pic/r={}/two_type/generated1/t={}.png'.format(r,i))
-        self.mkdir('data/Origin_Qlearning/shot_pic/r={}/two_type/generated1/type_t_matrix'.format(r))
-        np.savetxt('data/Origin_Qlearning/shot_pic/r={}/two_type/generated1/type_t_matrix/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(r),"type_t_matrix",str(r),str(self.epoches),str(self.L_num),str(self.count)),type_t_matrix.cpu().numpy())
-        #plt.show()
-        plt.clf()
-        plt.close("all")
-
-    def shot_pic2(self,type_t_matrix: tensor,i,r):
-        plt.clf()
-        plt.close("all")
-        # 初始化图表和数据
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        cmap = plt.get_cmap('Set1', 4)
-        # 指定图的大小
-        #             plt.figure(figsize=(500, 500))  # 10x10的图
-        #             plt.matshow(type_t_matrix.cpu().numpy(), cmap=cmap)
-        #             plt.colorbar(ticks=[0, 1, 2], label='Color')
-        # 显示图片
-        # 定义颜色映射
-        color_map = {
-            #0设置为灰色
-            0: (128, 128, 128),  # 灰色 DD
-            #1设置为白色
-            1: (255, 255, 255),  # 白色 CC
-            #2设置为黑色
-            2: (0, 0, 0),  # 黑色 CDC
-            #3设置为深蓝色
-            3: (31,119,180) # 深蓝色 StickStrategy
-        }
-        image = np.zeros((L_num, L_num, 3), dtype=np.uint8)
-        for label, color in color_map.items():
-            image[type_t_matrix.cpu() == label] = color
-        plt.title('Qlearning: '+f"T:{i}")
-        plt.imshow(image,interpolation='None')
-        self.mkdir('data/Origin_Qlearning/shot_pic/r={}/four_type/generated1'.format(r))
-        plt.savefig('data/Origin_Qlearning/shot_pic/r={}/four_type/generated1/t={}.png'.format(r,i))
-        self.mkdir('data/Origin_Qlearning/shot_pic/r={}/four_type/generated1/type_t_matrix'.format(r))
-        np.savetxt('data/Origin_Qlearning/shot_pic/r={}/four_type/generated1/type_t_matrix/{}_r={}_epoches={}_L={}_第{}次实验数据.txt'.format(str(r),"type_t_matrix",str(r),str(self.epoches),str(self.L_num),str(self.count)),type_t_matrix.cpu().numpy())
-        #plt.show()
-        plt.clf()
-        plt.close("all")
     #计算CD比例和利润
     def cal_fra_and_value(self, D_Y, C_Y, D_Value, C_Value,all_value, type_t_minus_matrix,type_t_matrix, d_matrix, c_matrix, profit_matrix,i):
         # 初始化图表和数据
@@ -340,28 +232,6 @@ class SPGG_Qlearning(nn.Module):
         StickStrategy=torch.where((Q_matrix[:,0,0]>Q_matrix[:,0,1])&(Q_matrix[:,1,1]>Q_matrix[:,1,0]),torch.tensor(1),torch.tensor(0))
         return DD.view((L_num,L_num)),CC.view((L_num,L_num)), CDC.view((L_num,L_num)), StickStrategy.view((L_num,L_num))
 
-    def split_five_policy_type(self,Q_matrix,type_t_matrix):
-        CC = torch.where((Q_matrix[:, 1, 1] > Q_matrix[:, 1, 0]) & (
-                Q_matrix[:, 0, 0] <= Q_matrix[:, 0, 1]), torch.tensor(1), torch.tensor(0)).view((L_num,L_num))
-        DD = torch.where((Q_matrix[:, 0, 0] > Q_matrix[:, 0, 1]) & (
-                    Q_matrix[:, 1, 1] <= Q_matrix[:, 1, 0]), torch.tensor(1), torch.tensor(0)).view((L_num,L_num))
-        CDC = torch.where((Q_matrix[:, 0, 0] < Q_matrix[:, 0, 1]) & (Q_matrix[:, 1, 1] < Q_matrix[:, 1, 0]), torch.tensor(1), torch.tensor(0)).view((L_num,L_num))
-        StickStrategy=torch.where((Q_matrix[:,0,0]>Q_matrix[:,0,1])&(Q_matrix[:,1,1]>Q_matrix[:,1,0]),torch.tensor(1),torch.tensor(0)).view((L_num,L_num))
-        CDC_C=CDC*torch.where(type_t_matrix==1,torch.tensor(1),torch.tensor(0))
-        CDC_D=CDC*torch.where(type_t_matrix==0,torch.tensor(1),torch.tensor(0))
-        CDC_neibor_num=0
-        other_neibor_num=0
-        CDC_neibor_DD, CDC_neibor_CC=torch.zeros((L_num,L_num)).to(device),torch.zeros((L_num,L_num)).to(device)
-        if CDC.sum().item()!=0:
-            CDC_neibor_matrix=self.pad_matrix(CDC.to(torch.float32).to(device))
-            CDC_neibor_conv2d = torch.nn.functional.conv2d(CDC_neibor_matrix.view(1,1,L_num+2,L_num+2), neibor_kernel,
-                                                          bias=None, stride=1, padding=0).view(L_num,L_num).to(device)
-            CDC_neibor_num=(CDC_neibor_conv2d*CDC).sum().item()/CDC.sum().item()
-            other_neibor_num = (CDC_neibor_conv2d * (1-CDC)).sum().item() / (1-CDC).sum().item()
-            CDC_neibor_DD=torch.where(CDC_neibor_conv2d*(1-CDC)>0,torch.tensor(1),torch.tensor(0))*DD
-            CDC_neibor_CC=torch.where(CDC_neibor_conv2d*(1-CDC)>0,torch.tensor(1),torch.tensor(0))*CC
-        return DD,CC, CDC, StickStrategy,CDC_D,CDC_C,CDC_neibor_num,other_neibor_num,CDC_neibor_DD,CDC_neibor_CC
-
     def cal_four_type_value(self,DD,CC,CDC,StickStrategy,profit_matrix):
         CC_value = profit_matrix * CC
         DD_value = profit_matrix * DD
@@ -369,26 +239,31 @@ class SPGG_Qlearning(nn.Module):
         StickStrategy_value = profit_matrix * StickStrategy
         return  DD_value,CC_value, CDC_value, StickStrategy_value
 
-    def cal_five_type_value(self,DD,CC,CDC,StickStrategy,CDC_D,CDC_C,CDC_neibor_DD,CDC_neibor_CC,profit_matrix):
-        CC_value = profit_matrix * CC
-        DD_value = profit_matrix * DD
-        CDC_value = profit_matrix * CDC
-        StickStrategy_value = profit_matrix * StickStrategy
-        CDC_C_value = profit_matrix * CDC_C
-        CDC_D_value = profit_matrix * CDC_D
-        CDC_neibor_DD_value = profit_matrix * CDC_neibor_DD
-        CDC_neibor_CC_value = profit_matrix * CDC_neibor_CC
-        return  DD_value,CC_value, CDC_value, StickStrategy_value,CDC_D_value,CDC_C_value,CDC_neibor_DD_value,CDC_neibor_CC_value
+    def split_eight_policy_type(self,type_t_minus1_matrix,type_t_matrix,type_t1_matrix):
+        CCC=torch.where((type_t_minus1_matrix==1)&(type_t_matrix==1)&(type_t1_matrix==1),torch.tensor(1),torch.tensor(0))
+        CCD=torch.where((type_t_minus1_matrix==1)&(type_t_matrix==1)&(type_t1_matrix==0),torch.tensor(1),torch.tensor(0))
+        CDC=torch.where((type_t_minus1_matrix==1)&(type_t_matrix==0)&(type_t1_matrix==1),torch.tensor(1),torch.tensor(0))
+        CDD=torch.where((type_t_minus1_matrix==1)&(type_t_matrix==0)&(type_t1_matrix==0),torch.tensor(1),torch.tensor(0))
+        DCC=torch.where((type_t_minus1_matrix==0)&(type_t_matrix==1)&(type_t1_matrix==1),torch.tensor(1),torch.tensor(0))
+        DCD=torch.where((type_t_minus1_matrix==0)&(type_t_matrix==1)&(type_t1_matrix==0),torch.tensor(1),torch.tensor(0))
+        DDC=torch.where((type_t_minus1_matrix==0)&(type_t_matrix==0)&(type_t1_matrix==1),torch.tensor(1),torch.tensor(0))
+        DDD=torch.where((type_t_minus1_matrix==0)&(type_t_matrix==0)&(type_t1_matrix==0),torch.tensor(1),torch.tensor(0))
+        return CCC,CCD,CDC,CDD,DCC,DCD,DDC,DDD
 
 
-    def run(self,r,alpha,gamma,epsilon,epoches, L_num, device,type):
+    def run(self,r,generated="generated1"):
         # node= np.full((L_num,1),1)
         current_time = datetime.now()
         milliseconds = current_time.microsecond // 1000
 
         print(f"Current time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}.{milliseconds}")
         # type_matrix=torch.tensor(node,dtype=torch.int).to(device)
-        type_t_matrix = self.generated_default_type_matrix().to(device)
+        if generated=="generated1":
+            type_t_matrix = self.generated_default_type_matrix().to(device)
+        elif generated=="generated2":
+            type_t_matrix = self.generated_default_type_matrix2().to(device)
+        elif generated=="generated3":
+            type_t_matrix = self.generated_default_type_matrix3().to(device)
         type_t_minus_matrix = torch.zeros((L_num, L_num), dtype=torch.float32).to(device)
         type_t1_matrix = type_t_matrix
         value_matrix = torch.tensor(L, dtype=torch.float32).to(device)
@@ -406,12 +281,9 @@ class SPGG_Qlearning(nn.Module):
         CC_data,DD_data,CD_data,DC_data=np.array([]),np.array([]),np.array([]),np.array([])
         D_Y= np.append(D_Y, count_0 )
         C_Y = np.append(C_Y, count_1 )
+        CCC_np, CCD_np, CDC_np, CDD_np, DCC_np, DCD_np, DDC_np, DDD_np = np.array([]), np.array([]), np.array([]), np.array([]), np.array([]), np.array([]), np.array([]), np.array([])
 
-
-        for i in tqdm(range(epoches), desc='Processing'):
-            # type_file_name = f'type\\type_{i + 1}.pt'  # 这里使用了 i+1 作为文件名
-            # Q_file_name = f'Q\\Q_{i + 1}.pt'  # 这里使用了 i+1 作为文件名
-            # V_file_name = f'V\\V_{i + 1}.pt'  # 这里使用了 i+1 作为文件名
+        for i in tqdm(range(self.epoches), desc='Processing'):
 
             # 把一个L的三个type分开
             d_matrix, c_matrix = self.type_matrix_to_three_matrix(type_t_matrix)
@@ -428,6 +300,9 @@ class SPGG_Qlearning(nn.Module):
             # 把一个L的三个type分开
             d_matrix, c_matrix = self.type_matrix_to_three_matrix(type_t1_matrix)
 
+            CCC, CCD, CDC, CDD, DCC, DCD, DDC, DDD=self.split_eight_policy_type(type_t_minus_matrix,type_t_matrix,type_t1_matrix)
+            CCC_np, CCD_np, CDC_np, CDD_np, DCC_np, DCD_np, DDC_np, DDD_np = np.append(CCC_np, CCC.sum().item()), np.append(CCD_np, CCD.sum().item()), np.append(CDC_np, CDC.sum().item()), np.append(CDD_np, CDD.sum().item()), np.append(DCC_np, DCC.sum().item()), np.append(DCD_np, DCD.sum().item()), np.append(DDC_np, DDC.sum().item()), np.append(DDD_np, DDD.sum().item())
+
             type_t_minus_matrix = type_t_matrix
             type_t_matrix = type_t1_matrix
 
@@ -435,7 +310,7 @@ class SPGG_Qlearning(nn.Module):
 
             #D_Y, C_Y, D_Value, C_Value,all_value, count_0, count_1, CC, DD, CD, DC = self.cal_fra_and_value( D_Y, C_Y,D_Value,C_Value,all_value,type_t_minus_matrix,type_t_matrix,d_matrix,c_matrix,profit_matrix,i)
             #DD,CC, CDC, StickStrategy = self.split_four_policy_type(Q_matrix)
-            DD, CC, CDC, StickStrategy,CDC_D,CDC_C,CDC_neibor_num,other_neibor_num,CDC_neibor_DD,CDC_neibor_CC= self.split_five_policy_type(Q_matrix,type_t_minus_matrix)
+            #DD, CC, CDC, StickStrategy,CDC_D,CDC_C,CDC_neibor_num,other_neibor_num,CDC_neibor_DD,CDC_neibor_CC= self.split_five_policy_type(Q_matrix,type_t_minus_matrix)
             #DD_value,CC_value, CDC_value, StickStrategy_value = self.cal_four_type_value( DD,CC, CDC, StickStrategy,profit_matrix)
             #DD_value,CC_value, CDC_value, StickStrategy_value,CDC_D_value,CDC_C_value,CDC_neibor_DD_value,CDC_neibor_CC_value = self.cal_five_type_value( DD,CC, CDC, StickStrategy,CDC_D,CDC_C,CDC_neibor_DD,CDC_neibor_CC,profit_matrix)
             # CC_data = np.append(CC_data, CC.sum().item()/ (L_num * L_num))
@@ -456,24 +331,18 @@ class SPGG_Qlearning(nn.Module):
             # other_neibor_num_np=np.append(other_neibor_num_np,other_neibor_num)
             # CDC_neibor_DD_value_np=np.append(CDC_neibor_DD_value_np,0 if CDC_neibor_DD.sum().item()==0 else CDC_neibor_DD_value.sum().item()/(CDC_neibor_DD.sum().item()))
             # CDC_neibor_CC_value_np=np.append(CDC_neibor_CC_value_np,0 if CDC_neibor_CC.sum().item()==0 else CDC_neibor_CC_value.sum().item()/(CDC_neibor_CC.sum().item()))
-            four_type_matrix = (CC*1+CDC*2+StickStrategy*3).view((L_num,L_num))
-
+            #four_type_matrix = (CC*1+CDC*2+StickStrategy*3).view((L_num,L_num))
 
             if i==0:
-                self.shot_pic(type_t_minus_matrix,i,r)
+                self.shot_save_data(type_t_minus_matrix,profit_matrix,i,r,generated=generated)
             if i==0  or i==9 or i==49 or i==99 or i==299 or i==499 or i==799 or i==999 or i==4999 or i==9999 or i==19999:
-                self.shot_pic(type_t_matrix,i+1,r)
-            if i==0  or i==9 or i==49 or i==99 or i==299 or i==499 or i==799 or i==999 or i==4999 or i==9999 or i==19999:
-                self.shot_pic2(four_type_matrix,i+1,r)
+                self.shot_save_data(type_t_matrix,profit_matrix,i+1,r,generated=generated)
+
         current_time = datetime.now()
         milliseconds = current_time.microsecond // 1000
         print(f"Current time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}.{milliseconds}")
-        if (type == "line2"):
-            return D_Y[-1], C_Y[-1]
-        elif (type == "line1"):
-            return D_Y, C_Y, D_Value, C_Value,all_value, Q_matrix, type_t_matrix, count_0, count_1,  CC_data, DD_data, CD_data, DC_data,DD_Y,CC_Y,CDC_Y,StickStrategy_Y,DD_value_np,CC_value_np,CDC_value_np,StickStrategy_value_np,CDC_D_value_np,CDC_C_value_np,CDC_neibor_num_np,other_neibor_num_np,CDC_neibor_DD_value_np,CDC_neibor_CC_value_np
-        elif (type == "Qtable"):
-            return Q_matrix,type_t_matrix
+        return D_Y, C_Y, D_Value, C_Value,all_value, Q_matrix, type_t_matrix, count_0, count_1, CCC_np, CCD_np, CDC_np, CDD_np, DCC_np, DCD_np, DDC_np, DDD_np
+
 
     def mkdir(self,path):
         import os
@@ -515,14 +384,6 @@ class SPGG_Qlearning(nn.Module):
                 self.save_data('StickStrategy_value_np', 'StickStrategy_value_np',r1, i, StickStrategy_value_np)
             r=r+1
 
-
-
-    def cal_transfer_pic(self):
-        D_Y, C_Y, D_Value, C_Value,all_value, Q_matrix, type_t_matrix, count_0, count_1,  CC_data, DD_data, CD_data, DC_data,DD_Y,CC_Y,CDC_Y\
-            ,StickStrategy_Y,DD_value_np,CC_value_np,CDC_value_np,StickStrategy_value_np,CDC_D_value_np,CDC_C_value_np=\
-            self.run(self.r, self.alpha,self.gamma,self.epsilon,self.epoches, self.L_num,self.device,type="line1")
-        self.draw_transfer_pic(CC_data, DD_data,CD_data,DC_data, xticks, fra_yticks,r=self.r,epoches=self.epoches)
-
     def extra_Q_table(self,loop_num):
         for i in range(loop_num):
             Q_matrix,type_t_matrix = self.run(self.r, self.alpha,self.gamma,self.epsilon,self.epoches, self.L_num,self.device,type="Qtable")
@@ -531,142 +392,31 @@ class SPGG_Qlearning(nn.Module):
             self.save_data('D_Qtable', 'D_Qtable',self.r, str(i), D_q_mean_matrix)
             self.save_data('C_Qtable', 'C_Qtable',self.r, str(i), C_q_mean_matrix)
 
-    def hot_pic(self,loop_num1=50,loop_num2 = 50,L_num=100):
-        alpha=0
-        gamma=0
-        for j in range(loop_num1):
-            for i in range(loop_num2):
-                r1 = r / 10
-                print("loop_num1: " + str(j) + " loop_num2: " + str(i) + " r=" + str(r1))
-                D_Y, C_Y, D_Value, C_Value,all_value, Q_matrix, type_t_matrix, count_0, count_1,  CC_data, DD_data, CD_data, DC_data,\
-                DD_Y,CC_Y,CDC_Y,StickStrategy_Y,DD_value_np,CC_value_np,CDC_value_np,StickStrategy_value_np,CDC_D_value_np,CDC_C_value_np = self.run(
-                    r1, alpha, gamma, self.epsilon, self.epoches, self.L_num, self.device, type="line1")
-                self.save_data('C_fra', 'C_fra', r1, i, C_Y)
-                self.save_data('D_fra', 'D_fra', r1, i, D_Y)
-                self.save_data('C_value', 'C_value', r1, i, C_Value)
-                self.save_data('D_value', 'D_value', r1, i, D_Value)
-                self.save_data('CC_fra', 'CC_fra', r1, i, CC_data)
-                self.save_data('DD_fra', 'DD_fra', r1, i, DD_data)
-                self.save_data('CD_fra', 'CD_fra', r1, i, CD_data)
-                self.save_data('DC_fra', 'DC_fra', r1, i, DC_data)
-            r = r + 1
-
-    def line2_pic(self, alpha, gamma, epsilon, loop_num1=10, loop_num2=10):
-        D_Final_fra = np.zeros(loop_num2)
-        C_Final_fra = np.array(loop_num2)
-        for j in range(loop_num1):
-            r = 0
-            D_Loop_fra = np.array([])
-            C_Loop_fra = np.array([])
-            for i in range(loop_num2):
-                print("loop_num1: " + str(j) + " loop_num2: " + str(i))
-                r = r + 0.1
-                D_Y, C_Y = self.run(r, alpha, gamma, epsilon, self.epoches, self.L_num, self.device, type="line2")
-                D_Loop_fra = np.append(D_Loop_fra, D_Y)
-                C_Loop_fra = np.append(C_Loop_fra, C_Y)
-            D_Final_fra = D_Final_fra + D_Loop_fra
-            C_Final_fra = C_Final_fra + C_Loop_fra
-        D_Final_fra = D_Final_fra / loop_num1
-        C_Final_fra = C_Final_fra / loop_num1
-        self.draw_line_pic(np.arange(loop_num2) / 10, D_Final_fra, C_Final_fra, np.arange(loop_num2 / 10), fra_yticks,
-                           r='0-5', epoches=self.epoches, type="line2", ylabel='fraction', xlable='r')
-
-    def line1_pic(self, r):
-        epoches = self.epoches
+    def line1_pic(self, r,generated="generated1"):
         loop_num = 1
-        D_Y_ave, C_Y_ave, D_Value_ave, C_Value_ave,all_value_ave, count_0_ave, \
-        count_1_ave, CC_data_ave, DD_data_ave, CD_data_ave, DC_data_ave = \
-            np.zeros(epoches + 1), np.zeros(epoches + 1), np.zeros(epoches), np.zeros(epoches),  np.zeros(epoches),\
-            0, 0, np.zeros(epoches), np.zeros(epoches), np.zeros(epoches), np.zeros(epoches)
-        Q_matrix_ave = torch.zeros((L_num * L_num, 2, 2)).to(device)
-        DD_Y_ave, CC_Y_ave, CDC_Y_ave, StickStrategy_Y_ave, DD_value_np_ave, CC_value_np_ave, CDC_value_np_ave, StickStrategy_value_np_ave,CDC_D_value_np_ave,CDC_C_value_np_ave\
-            =np.zeros(epoches),np.zeros(epoches),np.zeros(epoches),np.zeros(epoches),np.zeros(epoches),np.zeros(epoches),np.zeros(epoches),np.zeros(epoches),np.zeros(epoches),np.zeros(epoches)
         for i in range(loop_num):
-            print("第i轮:", i)
+            print("第i轮:", i, " r=", r)
             self.count=i
-            D_Y, C_Y, D_Value, C_Value,all_value, Q_matrix, type_t_matrix, count_0, count_1,  CC_data, DD_data, CD_data, DC_data,\
-            DD_Y,CC_Y,CDC_Y,StickStrategy_Y,DD_value_np,CC_value_np,CDC_value_np,StickStrategy_value_np,CDC_D_value_np,CDC_C_value_np,CDC_neibor_num_np,other_neibor_num_np,CDC_neibor_DD_value_np,CDC_neibor_CC_value_np= self.run(
-                self.r, self.alpha, self.gamma, self.epsilon, self.epoches, self.L_num, self.device, type="line1")
-            # D_Y_ave = D_Y_ave + D_Y
-            # C_Y_ave = C_Y_ave + C_Y
-            # D_Value_ave = D_Value_ave + D_Value
-            # C_Value_ave = C_Value_ave + C_Value
-            # all_value_ave = all_value_ave + all_value
-            # Q_matrix_ave = Q_matrix_ave + Q_matrix
-            # count_0_ave = count_0_ave + count_0
-            # count_1_ave = count_1_ave + count_1
-            # CC_data_ave = CC_data_ave + CC_data
-            # DD_data_ave = DD_data_ave + DD_data
-            # CD_data_ave = CD_data_ave + CD_data
-            # DC_data_ave = DC_data_ave + DC_data
-            # DD_Y_ave = DD_Y_ave + DD_Y
-            # CC_Y_ave = CC_Y_ave + CC_Y
-            # CDC_Y_ave = CDC_Y_ave + CDC_Y
-            # StickStrategy_Y_ave = StickStrategy_Y_ave + StickStrategy_Y
-            # DD_value_np_ave = DD_value_np_ave + DD_value_np
-            # CC_value_np_ave = CC_value_np_ave + CC_value_np
-            # CDC_value_np_ave = CDC_value_np_ave + CDC_value_np
-            # StickStrategy_value_np_ave = StickStrategy_value_np_ave + StickStrategy_value_np
-            # CDC_D_value_np_ave = CDC_D_value_np_ave + CDC_D_value_np
-            # CDC_C_value_np_ave = CDC_C_value_np_ave + CDC_C_value_np
-            # self.save_data('C_fra', 'C_fra', r, i, C_Y)
-            # self.save_data('D_fra', 'D_fra', r, i, D_Y)
-            # self.save_data('C_value', 'C_value', r, i, C_Value)
-            # self.save_data('D_value', 'D_value', r, i, D_Value)
-            # self.save_data('CC_fra', 'CC_fra', r, i, CC_data)
-            # self.save_data('DD_fra', 'DD_fra', r, i, DD_data)
-            # self.save_data('CD_fra', 'CD_fra', r, i, CD_data)
-            # self.save_data('DC_fra', 'DC_fra', r, i, DC_data)
-            # self.save_data('CC_Y', 'CC_Y', r, i, CC_Y)
-            # self.save_data('DD_Y', 'DD_Y', r, i, DD_Y)
-            # self.save_data('CDC_Y', 'CDC_Y', r, i, CDC_Y)
-            # self.save_data('StickStrategy_Y', 'StickStrategy_Y', r, i, StickStrategy_Y)
-            # self.save_data('DD_value_np', 'DD_value_np', r, i, DD_value_np)
-            # self.save_data('CC_value_np', 'CC_value_np', r, i, CC_value_np)
-            # self.save_data('CDC_value_np', 'CDC_value_np', r, i, CDC_value_np)
-            # self.save_data('StickStrategy_value_np', 'StickStrategy_value_np', r, i, StickStrategy_value_np)
-            # self.save_data('all_value', 'all_value', r, i, all_value)
-            # self.save_data('CDC_D_value_np', 'CDC_D_value_np', r, i, CDC_D_value_np)
-            # self.save_data('CDC_C_value_np', 'CDC_C_value_np', r, i, CDC_C_value_np)
-            #self.save_data('CDC_neibor_num_np', 'CDC_neibor_num_np', r, i, CDC_neibor_num_np)
-            #self.save_data('other_neibor_num_np', 'other_neibor_num_np', r, i, other_neibor_num_np)
-            # self.save_data('CDC_neibor_DD_value_np', 'CDC_neibor_DD_value_np', r, i, CDC_neibor_DD_value_np)
-            # self.save_data('CDC_neibor_CC_value_np', 'CDC_neibor_CC_value_np', r, i, CDC_neibor_CC_value_np)
-        # D_Y_ave = D_Y_ave / loop_num
-        # C_Y_ave = C_Y_ave / loop_num
-        # D_Value_ave = D_Value_ave / loop_num
-        # C_Value_ave = C_Value_ave / loop_num
-        # Q_matrix_ave = Q_matrix_ave / loop_num
-        # count_0_ave = count_0_ave / loop_num
-        # count_1_ave = count_1_ave / loop_num
-        # CC_data_ave = CC_data_ave / loop_num
-        # DD_data_ave = DD_data_ave / loop_num
-        # CD_data_ave = CD_data_ave / loop_num
-        # DC_data_ave = DC_data_ave / loop_num
-        #
-        # q_mean_matrix = torch.mean(Q_matrix_ave, dim=0)
-        # print(q_mean_matrix)
-
-        # self.draw_line_pic( D_Y_ave, C_Y_ave, xticks, fra_yticks, r=r, epoches=epoches)
-        # self.draw_line_pic( D_Value_ave, C_Value_ave, xticks, profite_yticks, ylim=(0, 15), r=r, epoches=epoches,
-        #                    xlable='T', ylabel='value')
-        # if (self.cal_transfer == True):
-        #     self.draw_transfer_pic( CC_data_ave, DD_data_ave, CD_data_ave, DC_data_ave, xticks,fra_yticks,r=self.r, epoches=self.epoches)
-        # print(count_0_ave / (L_num * L_num))
-        # print(count_1_ave / (L_num * L_num))
-        # print(D_Value_ave[-1])
-        # print(C_Value_ave[-1])
+            D_Y, C_Y, D_Value, C_Value, all_value, Q_matrix, type_t_matrix, count_0, count_1, CCC_np, CCD_np, CDC_np, CDD_np, DCC_np, DCD_np, DDC_np, DDD_np = self.run(self.r, generated=generated)
+            # self.save_data('CCC_np', 'CCC_np', r, i, CCC_np)
+            # self.save_data('CCD_np', 'CCD_np', r, i, CCD_np)
+            # self.save_data('CDC_np', 'CDC_np', r, i, CDC_np)
+            # self.save_data('CDD_np', 'CDD_np', r, i, CDD_np)
+            # self.save_data('DCC_np', 'DCC_np', r, i, DCC_np)
+            # self.save_data('DCD_np', 'DCD_np', r, i, DCD_np)
+            # self.save_data('DDC_np', 'DDC_np', r, i, DDC_np)
+            # self.save_data('DDD_np', 'DDD_np', r, i, DDD_np)
 
 
-def draw_shot():
-    r_list=[2.5,2.9,3.3]
+
+def draw_shot(r_list,generated="generated1"):
     for r in r_list:
         SPGG = SPGG_Qlearning(L_num, device, alpha, gamma, epsilon, r=r, epoches=10000, cal_transfer=True)
-        SPGG.line1_pic(r)
+        SPGG.line1_pic(r,generated)
 
 if __name__ == '__main__':
     r=3.8
-    SPGG=SPGG_Qlearning(L_num,device,alpha,gamma,epsilon,r=r,epoches=10000,cal_transfer=True)
+    #SPGG=SPGG_Qlearning(L_num,device,alpha,gamma,epsilon,r=r,epoches=10000,cal_transfer=True)
     # # SPGG.run_line2_pic(loop_num1=51,loop_num2 = 10)
     # SPGG.extra_Q_table(10)
     #SPGG=SPGG_Qlearning(L_num,device,alpha,gamma,epsilon,r=r,epoches=10000,cal_transfer=True)
@@ -674,4 +424,5 @@ if __name__ == '__main__':
     #SPGG.line1_pic(r)
     #SPGG.cal_transfer_pic()
     #SPGG.extra_Q_table(10)
-    draw_shot()
+    r_list1=[4.7]
+    draw_shot(r_list1,generated="generated3")

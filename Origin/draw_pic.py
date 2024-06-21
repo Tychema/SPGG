@@ -1,10 +1,30 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.image as mpimg
+from PIL import Image
+import numpy as np
 
 def read_data(path):
     data = np.loadtxt(path)
     return data
+
+
+def crop_image_jpeg(image, left_padding=400, right_padding=400, top_padding=400, bottom_padding=400):
+    # 使用PIL加载JPEG图像
+    # 对于JPEG图像，我们只需要处理RGB三个通道
+    nonzero_rows = np.any(image != [255, 255, 255], axis=(1, 2))
+    nonzero_cols = np.any(image != [255, 255, 255], axis=(0, 2))
+    min_row, max_row = np.where(nonzero_rows)[0][[0, -1]]
+    min_col, max_col = np.where(nonzero_cols)[0][[0, -1]]
+    # 调整裁剪范围以适应JPEG图像
+    cropped_image = image[min_row + top_padding:max_row + 1 - bottom_padding,
+                    min_col + left_padding:max_col + 1 - right_padding, :]
+    # 如果需要，可以将裁剪后的numpy数组转回PIL图像或直接保存为文件
+    # cropped_img = Image.fromarray(cropped_image)
+    # cropped_img.save('cropped_image.jpg')
+    return cropped_image
+
+
 def crop_image(image, left_padding=400, right_padding=400, top_padding=400, bottom_padding=400):
     # 计算非零像素的最小外接矩形
     nonzero_rows = np.any(image != [255, 255, 255, 255], axis=(1, 2))
@@ -36,6 +56,7 @@ def add_right_white_pixels(image, pixels=10):
     return new_image
 
 def add_white_border(image, top=0, bottom=0, left=0, right=0):
+    image=image.copy()
     # 检查图像是否为RGBA（4通道）或RGB（3通道），并设置相应的白色值
     if image.shape[2] == 4:  # 对于RGBA图像
         white_value = [255, 255, 255, 255]
@@ -58,12 +79,24 @@ def add_white_border(image, top=0, bottom=0, left=0, right=0):
 
 if __name__ == '__main__':
     # 读入图片
-    Qlearning_Line_plus_shotsnap = ["/rjxy/t0a/teacher01/myj/project/SPGG/Origin/data/Origin_Qlearning/Line_pic/r=3.6/Qlearning_L200r=3.6 T=10000.png", "data/Origin_Qlearning/shot_pic/r=3.6/two_type/t=1.png",
-                   "data/Origin_Qlearning/shot_pic/r=3.6/two_type/t=10.png", "data/Origin_Qlearning/shot_pic/r=3.6/two_type/t=100.png", "data/Origin_Qlearning/shot_pic/r=3.6/two_type/t=1000.png",
-                   "/rjxy/t0a/teacher01/myj/project/SPGG/Origin/data/Origin_Qlearning/Line_pic/r=4.7/Qlearning_L200 r=4.7 T=10000.png", "data/Origin_Qlearning/shot_pic/r=4.7/two_type/t=1.png",
-                   "data/Origin_Qlearning/shot_pic/r=4.7/two_type/t=10.png", "data/Origin_Qlearning/shot_pic/r=4.7/two_type/t=100.png", "data/Origin_Qlearning/shot_pic/r=4.7/two_type/t=1000.png",
-                   "/rjxy/t0a/teacher01/myj/project/SPGG/Origin/data/Origin_Qlearning/Line_pic/r=5.0/Qlearning_L200r=5.0 T=10000.png", "data/Origin_Qlearning/shot_pic/r=5.0/two_type/t=1.png",
-                   "data/Origin_Qlearning/shot_pic/r=5.0/two_type/t=10.png", "data/Origin_Qlearning/shot_pic/r=5.0/two_type/t=100.png", "data/Origin_Qlearning/shot_pic/r=5.0/two_type/t=1000.png",
+    Qlearning_Line_plus_shotsnap = ["/rjxy/t0a/teacher01/myj/project/SPGG/Origin/data/Origin_Qlearning/Line_pic/r=3.6/Qlearning_L200r=3.6 T=10000.png",
+                                    "data/Origin_Qlearning/shot_pic/r=3.6/two_type/t=1.png",
+                                    "data/Origin_Qlearning/shot_pic/r=3.6/two_type/t=10.png",
+                                    "data/Origin_Qlearning/shot_pic/r=3.6/two_type/t=100.png",
+                                    "data/Origin_Qlearning/shot_pic/r=3.6/two_type/t=1000.png",
+                                    "data/Origin_Qlearning/shot_pic/r=3.6/two_type/t=10000.png",
+                                    "/rjxy/t0a/teacher01/myj/project/SPGG/Origin/data/Origin_Qlearning/Line_pic/r=4.7/Qlearning_L200 r=4.7 T=10000.png",
+                                    "data/Origin_Qlearning/shot_pic/r=4.7/two_type/t=1.png",
+                                    "data/Origin_Qlearning/shot_pic/r=4.7/two_type/t=10.png",
+                                    "data/Origin_Qlearning/shot_pic/r=4.7/two_type/t=100.png",
+                                    "data/Origin_Qlearning/shot_pic/r=4.7/two_type/t=1000.png",
+                                    "data/Origin_Qlearning/shot_pic/r=4.7/two_type/t=10000.png",
+                                    "/rjxy/t0a/teacher01/myj/project/SPGG/Origin/data/Origin_Qlearning/Line_pic/r=5.0/Qlearning_L200r=5.0 T=10000.png",
+                                    "data/Origin_Qlearning/shot_pic/r=5.0/two_type/t=1.png",
+                                    "data/Origin_Qlearning/shot_pic/r=5.0/two_type/t=10.png",
+                                    "data/Origin_Qlearning/shot_pic/r=5.0/two_type/t=100.png",
+                                    "data/Origin_Qlearning/shot_pic/r=5.0/two_type/t=1000.png",
+                                    "data/Origin_Qlearning/shot_pic/r=5.0/two_type/t=10000.png",
                    ]
 
     Fermi_Line_plus_shotsnap = ["/rjxy/t0a/teacher01/myj/project/SPGG/Origin/data/Origin_Qlearning/Line_pic/r=3.6/Fermi_L200 r=3.6 T=10000.png", "data/Origin_Fermi/shot_pic/r=3.6/two_type/t=1.png",
